@@ -1,6 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Add any global styles here */
+.recharts-wrapper {
+  font-family: sans-serif;
+}
 
 :root {
   --background: #ffffff;
@@ -15,7 +20,43 @@
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  background-color: #0f172a;
+  color: #e2e8f0;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 500px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.total-cost {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.total-cost h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.total-cost p {
+  font-size: 2rem;
+  font-weight: bold;
 }
