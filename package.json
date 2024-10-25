@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "seed": "node scripts/seed.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,7 +14,9 @@
     "apexcharts": "^3.54.1",
     "chart.js": "^4.4.5",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.4.5",
     "next": "15.0.1",
+    "pg": "^8.13.1",
     "react": "^18.3.1",
     "react-apexcharts": "^1.4.1",
     "react-chartjs-2": "^5.2.0",
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
