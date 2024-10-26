@@ -7,9 +7,9 @@ const pool = new Pool({
 
 // Seed data for users and posts
 const users = [
-  { name: 'Dogan', email: 'lazutlivera@gmail.com' },
-  { name: 'Mustafa', email: 'demirci.mustafataha@gmail.com' },
-  { name: 'Tibet', email: 'tibetozturk@example.com' },
+  { name: 'Dogan', email: 'lazutlivera@gmail.com', password: "kindred" },
+  { name: 'Mustafa', email: 'demirci.mustafataha@gmail.com', password: "kindred" },
+  { name: 'Tibet', email: 'tibetozturk@example.com', password: "kindred" },
 ];
 
 const subscriptions = [
@@ -33,8 +33,9 @@ const subscriptions = [
 async function resetDatabase() {
   try {
 
-    await pool.query('DROP TABLE IF EXISTS users');
     await pool.query('DROP TABLE IF EXISTS subscriptions');
+    await pool.query('DROP TABLE IF EXISTS users');
+    
 
     // Recreate users table
     await pool.query(`
@@ -42,6 +43,7 @@ async function resetDatabase() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(100),
         email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(64) NOT NULL,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
@@ -71,8 +73,8 @@ async function seedUsers() {
   try {
     for (const user of users) {
       await pool.query(
-        'INSERT INTO users (name, email) VALUES ($1, $2)',
-        [user.name, user.email]
+        'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+        [user.name, user.email, user.password]
       );
     }
     console.log('Users table seeded successfully!');
