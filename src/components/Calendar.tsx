@@ -138,23 +138,40 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
               {/* Subscription Logos */}
               {hasSubscriptions && (
                 <div className="absolute bottom-1 right-1 flex -space-x-2">
-                  {subscriptionsForDay.map((sub, idx) => (
-                    <div
-                      key={idx}
-                      className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm"
-                      title={sub.name}
-                    >
-                      {sub.logo && (
-                        <Image
-                          src={sub.logo}
-                          alt={sub.name}
-                          width={24}
-                          height={24}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                  ))}
+                  {subscriptionsForDay.map((sub, idx) => {
+                    if (idx < 2) {
+                      return (
+                        <div
+                          key={idx}
+                          className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm"
+                          title={sub.name}
+                        >
+                          {sub.logo && (
+                            <Image
+                              src={sub.logo}
+                              alt={sub.name}
+                              width={24}
+                              height={24}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                      );
+                    } else if (idx === 2 && subscriptionsForDay.length > 2) {
+                      return (
+                        <div 
+                          key={idx}
+                          className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm flex items-center justify-center"
+                          title={`+${subscriptionsForDay.length - 2} more`}
+                        >
+                          <span className="text-xs text-gray-400">
+                            +{subscriptionsForDay.length - 2}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
               )}
 

@@ -278,28 +278,6 @@ export default function SubscriptionForm({ onSubmit, existingSubscription }: Sub
             />
           </div>
 
-          {/* Add Logo URL input */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="logo" className="text-gray-400 text-sm">Logo URL</label>
-            <input
-              id="logo"
-              type="url"
-              name="logo"
-              value={formData.logo || ''}
-              onChange={handleChange}
-              placeholder="Enter logo URL"
-              list="logo-suggestions"
-              className="bg-gray-800 text-white rounded-lg p-3 h-12 w-full"
-            />
-            <datalist id="logo-suggestions">
-              {commonSubscriptions.map((sub) => (
-                <option key={sub.name} value={sub.logo}>
-                  {sub.name}
-                </option>
-              ))}
-            </datalist>
-          </div>
-
           <div className="flex flex-col gap-1">
             <label htmlFor="startDate" className="text-gray-400 text-sm">Start Date</label>
             <input
