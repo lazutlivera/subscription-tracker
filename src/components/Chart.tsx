@@ -106,7 +106,7 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
   };
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-8">
+    <div className="bg-[#1C1C27] rounded-xl p-8 min-h-[555px]">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-xl font-semibold text-white mb-4">Subscription Overview</h2>
