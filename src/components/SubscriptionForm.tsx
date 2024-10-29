@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Subscription } from '../types/subscription';
 import { PlusIcon } from '@heroicons/react/24/solid';
-import Image from 'next/image'; // Import Next.js Image component
+import SubscriptionList from './SubscriptionList';
 
 interface SubscriptionFormProps {
   onSubmit: (subscription: Omit<Subscription, "id">) => void;
-  existingSubscription?: Subscription | null;
+  existingSubscription: Subscription | null;
+  subscriptions: Subscription[];
 }
 
 interface CommonSubscription {
@@ -15,6 +16,8 @@ interface CommonSubscription {
   logo: string;
   defaultPrice: number; // Changed to only monthly price
 }
+
+
 
 const commonSubscriptions: CommonSubscription[] = [
   // Existing Subscriptions
@@ -122,7 +125,7 @@ const commonSubscriptions: CommonSubscription[] = [
   },
 ];
 
-export default function SubscriptionForm({ onSubmit, existingSubscription }: SubscriptionFormProps) {
+export default function SubscriptionForm({ onSubmit, existingSubscription, subscriptions }: SubscriptionFormProps) {
   const [isCustom, setIsCustom] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -132,6 +135,8 @@ export default function SubscriptionForm({ onSubmit, existingSubscription }: Sub
     canceledDate: null as string | null,
     billingCycle: 'monthly' as const,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
 
   // Initialize form with existing subscription data if provided
   useEffect(() => {
@@ -154,11 +159,27 @@ export default function SubscriptionForm({ onSubmit, existingSubscription }: Sub
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Only check for duplicates if this is a new subscription
+    if (!existingSubscription) {
+      const isDuplicate = subscriptions.some(
+        sub => sub.name.toLowerCase() === formData.name.toLowerCase()
+      );
+      if (isDuplicate) {
+        setError('This subscription already exists!');
+        setIsError(true);
+        return;
+      }
+    }
+
     // Validate required fields for custom subscriptions
     if (isCustom && (!formData.name || !formData.price)) {
       alert('Name and price are required for custom subscriptions');
       return;
     }
+
+    // Clear any existing errors
+    setError(null);
+    setIsError(false);
 
     const price = isCustom 
       ? Number(formData.price) 
@@ -187,7 +208,12 @@ export default function SubscriptionForm({ onSubmit, existingSubscription }: Sub
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value  
+    }));
+    setError(null);
+    setIsError(false);
   };
 
   const handleCancelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,6 +226,9 @@ export default function SubscriptionForm({ onSubmit, existingSubscription }: Sub
 
   return (
     <div className="bg-[#1C1C27] rounded-xl p-6 shadow-lg">
+      {isError && error && (
+        <div className="text-red-500 mb-4">{error}</div>
+      )}
       <h2 className="text-xl font-semibold text-white mb-6">
         {existingSubscription ? 'Edit Subscription' : 'Add New Subscription'}
       </h2>

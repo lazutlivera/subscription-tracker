@@ -78,19 +78,19 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
     <div className="bg-[#1C1C27] rounded-xl p-6 shadow-lg">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-white">Calendar</h2>
-        <div className="flex gap-4">
+        <div className="flex items-center w-64">
           <button 
             onClick={previousMonth}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors w-8"
           >
             ←
           </button>
-          <span className="text-white font-medium">
+          <span className="text-white font-medium flex-1 text-center">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </span>
           <button 
             onClick={nextMonth}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors w-8"
           >
             →
           </button>

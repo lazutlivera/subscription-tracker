@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  
 
   useEffect(() => {
     // Load and parse subscriptions from localStorage
@@ -104,7 +105,7 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-[#13131A]">
       <div className="max-w-7xl mx-auto space-y-8">
-        <SubscriptionForm onSubmit={handleSubscriptionSubmit} existingSubscription={editingSubscription} />
+        <SubscriptionForm onSubmit={handleSubscriptionSubmit} existingSubscription={editingSubscription} subscriptions={subscriptions} />
         <SubscriptionList 
           subscriptions={subscriptions}
           onEdit={handleEdit}
