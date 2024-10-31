@@ -19,17 +19,25 @@ export default function Signup() {
     const [formState, setFormState] = useState<FormState>({values: {name: "", email: "", password: "", confirmPassword: ""}, errors: {}});
     
     const signupUser = async (userData: { name: string, email: string; password: string }) => {
-        const response = await fetch(endpoints.auth.signup, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userData),
-        });
-      
-        if (!response.ok) {
-          throw new Error('Signup failed');
+       
+        try {
+            const response = await fetch(endpoints.auth.signup, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData),
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Error: ${response.status} - ${errorData.error || "Failed to create user"}`);
+            }
+    
+            return await response.json();
+    
+        } catch (error) {
+            console.log(error);
+            return error;
         }
-      
-        return await response.json();
     };
 
     const validate = () => {
@@ -59,8 +67,6 @@ export default function Signup() {
             newErrors.confirmPassword = 'Passwords do not match';
         }
 
-        console.log("validating errors now: ");
-        console.log(newErrors);
         setFormState({values: values, errors: newErrors});
         return newErrors;
     };
@@ -77,18 +83,13 @@ export default function Signup() {
         const name = (form.elements.namedItem('name') as HTMLInputElement).value;
         const email = (form.elements.namedItem('email') as HTMLInputElement).value;
         const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-        const confirmPassword = (form.elements.namedItem('confirmPassword') as HTMLInputElement).value;
 
         const errors = validate();
         const isValid = Object.keys(errors).length === 0;
 
         if(isValid){
-            console.log("we will submit now");
             const userData = {name: name, email: email, password: password };
-            const createUser = await signupUser(userData);
-
-            console.log(createUser);
-
+            await signupUser(userData);
         } else {
             console.log("there are errors")
             console.log(errors);
