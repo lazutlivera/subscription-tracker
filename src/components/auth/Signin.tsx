@@ -16,7 +16,11 @@ interface FormState {
 export default function SignIn() {
   const [formState, setFormState] = useState<FormState>({values: {email: "", password: ""}, errors: {}});
 
-  const { isTokenValid } = useCheckAuth();
+  const { isLoading, isTokenValid } = useCheckAuth();
+
+  if (isLoading) {
+    //TODO: Add custom loading screen/logic at somepoint, currently just a whitepage
+  }
 
   if(isTokenValid) {
     console.log("verified token");

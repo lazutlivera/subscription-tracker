@@ -4,6 +4,7 @@ import endpoints from '@/utils/endpoints';
 
 const useCheckAuth = () => {
   const [isTokenValid, setIsTokenValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,12 +32,13 @@ const useCheckAuth = () => {
         }
       }
       setIsTokenValid(false);
+      setIsLoading(false);
     };
 
     checkAuth();
   }, [router]);
 
-  return { isTokenValid };
+  return { isLoading, isTokenValid };
 };
 
 export default useCheckAuth;
