@@ -8,11 +8,19 @@ import Calendar from '@/components/Calendar';
 import { mockSubscriptions } from '../utils/subscriptionData';
 import SubscriptionList from '@/components/SubscriptionList';
 import { format } from 'date-fns';
+import useCheckAuth from '@/hooks/useCheckAuth';
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
+  const { isLoading, isTokenValid } = useCheckAuth();
+  useEffect(() => {
+    if (isTokenValid) {
+      setIsLoggedIn(true);
+    } 
+  }, [isTokenValid]);
 
   useEffect(() => {
     // Load and parse subscriptions from localStorage
@@ -28,6 +36,10 @@ export default function Home() {
     );
     setSubscriptions(loadedSubscriptions);
   }, []);
+
+  
+
+
 
   const handleSubscriptionSubmit = (newSubscription: Omit<Subscription, "id">) => {
     if (editingSubscription) {
@@ -52,6 +64,7 @@ export default function Home() {
       setSubscriptions(updatedSubscriptions);
       
       // Save to localStorage
+      
       localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
     }
   };
@@ -99,12 +112,27 @@ export default function Home() {
         : sub
     );
     setSubscriptions(updatedSubscriptions);
+
     localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
+  };
+
+  
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
   };
 
   return (
     <main className="min-h-screen p-8 bg-[#13131A]">
       <div className="max-w-7xl mx-auto space-y-8">
+        <section className="flex justify-end">
+          <button 
+            className="w-[10%] bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
+            onClick={isLoggedIn ? handleLogout : () => window.location.href = '/signin'}
+          >
+            {isLoggedIn ? 'Logout' : 'Login'}
+          </button>
+        </section>
         <SubscriptionForm onSubmit={handleSubscriptionSubmit} existingSubscription={editingSubscription} subscriptions={subscriptions} />
         <SubscriptionList 
           subscriptions={subscriptions}

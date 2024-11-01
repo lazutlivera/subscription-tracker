@@ -36,7 +36,7 @@ const useCheckAuth = () => {
     };
 
     checkAuth();
-  }, [router]);
+  }, []);
 
   return { isLoading, isTokenValid };
 };

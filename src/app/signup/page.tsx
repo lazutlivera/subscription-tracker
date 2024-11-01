@@ -4,7 +4,7 @@ import Signup from "@/components/auth/Signup";
 const SignupPage = () => {
     return (
         <>
-        <div style={{ backgroundColor: 'white', minHeight: '100vh' }}>
+        <div className="min-h-screen p-8 bg-[#13131A]">
             <Signup />
         </div>
         </>
