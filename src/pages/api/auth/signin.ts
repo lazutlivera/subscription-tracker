@@ -15,7 +15,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Find user by email
       const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       const user = result.rows[0];
-      
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
