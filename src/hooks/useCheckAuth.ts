@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import endpoints from '@/utils/endpoints';
 
 const useCheckAuth = () => {
-  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
+  const [isTokenValid, setIsTokenValid] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -11,7 +11,6 @@ const useCheckAuth = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Call verifyToken API to validate the token
           const response = await fetch(endpoints.auth.verify, {
             method: 'POST',
             headers: {
@@ -23,7 +22,7 @@ const useCheckAuth = () => {
           const data = await response.json();
 
           if (data.valid) {
-            // Token is valid, redirect to homepage
+            setIsTokenValid(true);
             router.push('/');
             return;
           }
