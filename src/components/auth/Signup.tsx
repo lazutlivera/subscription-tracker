@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from "react";
 import endpoints from "../../utils/endpoints";
+import { useRouter } from "next/navigation";
 
 interface FormValues {
     name?: string;
@@ -12,11 +13,12 @@ interface FormValues {
 interface FormState {
     values: FormValues;
     errors: FormValues;
+    status: "pending" | "success" | "error"
   }
 
 export default function Signup() {
-
-    const [formState, setFormState] = useState<FormState>({values: {name: "", email: "", password: "", confirmPassword: ""}, errors: {}});
+    const router = useRouter();
+    const [formState, setFormState] = useState<FormState>({values: {name: "", email: "", password: "", confirmPassword: ""}, errors: {}, status: "pending"});
     
     const signupUser = async (userData: { name: string, email: string; password: string }) => {
        
@@ -29,9 +31,10 @@ export default function Signup() {
     
             if (!response.ok) {
                 const errorData = await response.json();
+                setFormState({values: formState.values, errors: formState.errors, status: "error"});
                 throw new Error(`Error: ${response.status} - ${errorData.error || "Failed to create user"}`);
             }
-    
+            setFormState({values: formState.values, errors: formState.errors, status: "success"});
             return await response.json();
     
         } catch (error) {
@@ -67,14 +70,14 @@ export default function Signup() {
             newErrors.confirmPassword = 'Passwords do not match';
         }
 
-        setFormState({values: values, errors: newErrors});
+        setFormState({values: values, errors: newErrors, status: "pending"});
         return newErrors;
     };
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
         const newValues = {...formState.values, [name]: value};
-        setFormState({values: newValues, errors: formState.errors});
+        setFormState({values: newValues, errors: formState.errors, status: formState.status});
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -90,14 +93,22 @@ export default function Signup() {
         if(isValid){
             const userData = {name: name, email: email, password: password };
             await signupUser(userData);
+            router.push("/signin");
         } else {
             console.log("Error creating user.")
             console.log(errors);
         }
 
     }
-    
-    return (
+
+    if(formState.status === "success") {
+      return (
+        <>
+        <p>Your account has been created.</p>
+        </>
+      )
+    } else {
+      return (
         <>
        <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -123,6 +134,7 @@ export default function Signup() {
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 />
               </div>
+              {formState.errors?.name && <div className="text-red-700">{formState.errors?.name}</div>} 
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium leading-6 text-white">
@@ -140,6 +152,7 @@ export default function Signup() {
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 />
               </div>
+              {formState.errors?.email && <p className="text-red-700">{formState.errors?.email}</p>} 
             </div>
 
             <div>
@@ -159,6 +172,7 @@ export default function Signup() {
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 />
               </div>
+              {formState.errors?.password && <div className="text-red-700">{formState.errors?.password}</div>} 
             </div>
             <div>
               <div className="flex items-center justify-between">
@@ -177,6 +191,7 @@ export default function Signup() {
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 />
               </div>
+              {formState.errors?.confirmPassword && <p className="text-red-700">{formState.errors?.confirmPassword}</p>} 
             </div>
 
             <div>
@@ -192,4 +207,5 @@ export default function Signup() {
       </div>
 </>
 )
+    }
 }
