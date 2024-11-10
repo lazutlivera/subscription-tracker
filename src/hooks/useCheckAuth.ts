@@ -21,11 +21,13 @@ const useCheckAuth = () => {
           });
 
           const data = await response.json();
-
           if (data.valid) {
             setIsTokenValid(true);
             router.push('/');
             return;
+          } else {
+            console.log("Token is not valid");
+            localStorage.removeItem("token");
           }
         } catch (error) {
           console.error("Token verification failed:", error);
