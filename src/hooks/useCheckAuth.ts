@@ -1,46 +1,44 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import endpoints from '@/utils/endpoints';
+import { useState, useEffect } from 'react';
 
-const useCheckAuth = () => {
-  const [isTokenValid, setIsTokenValid] = useState(false);
+export default function useCheckAuth() {
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const [isTokenValid, setIsTokenValid] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await fetch(endpoints.auth.verify, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({token: token}),
-          });
-
-          const data = await response.json();
-          if (data.valid) {
-            setIsTokenValid(true);
-            router.push('/');
-            return;
-          } else {
-            console.log("Token is not valid");
-            localStorage.removeItem("token");
-          }
-        } catch (error) {
-          console.error("Token verification failed:", error);
+    const verifyToken = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          setIsTokenValid(false);
+          setIsLoading(false);
+          return;
         }
+
+        const response = await fetch('/api/auth/verify', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          setIsTokenValid(true);
+        } else {
+          // If token is invalid, remove it from localStorage
+          localStorage.removeItem('token');
+          setIsTokenValid(false);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsTokenValid(false);
+      } finally {
+        setIsLoading(false);
       }
-      setIsTokenValid(false);
-      setIsLoading(false);
     };
 
-    checkAuth();
+    verifyToken();
   }, []);
 
   return { isLoading, isTokenValid };
-};
-
-export default useCheckAuth;
+}
