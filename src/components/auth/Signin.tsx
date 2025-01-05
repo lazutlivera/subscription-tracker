@@ -15,6 +15,7 @@ interface FormState {
 
 export default function SignIn() {
   const [formState, setFormState] = useState<FormState>({values: {email: "", password: ""}, errors: {}});
+  const [loginError, setLoginError] = useState<string>('');
 
   const { isLoading, isTokenValid } = useCheckAuth();
 
@@ -30,24 +31,24 @@ export default function SignIn() {
   const router = useRouter();
 
     const signIn = async (userData: { email: string; password: string }) => {
-       
         try {
             const response = await fetch(endpoints.auth.login, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData),
             });
-    
+
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Error: ${response.status} - ${errorData.error || "Failed to login"}`);
+                throw new Error(data.message || "Failed to login");
             }
-    
-            return await response.json();
-    
+
+            return data; // Return the full response data
+
         } catch (error) {
-            console.log(error);
-            return error;
+            console.error(error);
+            throw error; // Throw the error instead of returning it
         } 
     };
 
@@ -74,6 +75,7 @@ export default function SignIn() {
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setLoginError('');
         const form = event.currentTarget;
         const email = (form.elements.namedItem('email') as HTMLInputElement).value;
         const password = (form.elements.namedItem('password') as HTMLInputElement).value;
@@ -82,15 +84,21 @@ export default function SignIn() {
         const isValid = Object.keys(errors).length === 0;
 
         if(isValid){
-            const userData = {email: email, password: password };
-            const { token } = await signIn(userData);
-            window.localStorage.setItem("token", token);
-            router.push("/");
+            try {
+                const userData = {email: email, password: password };
+                const data = await signIn(userData);
+                
+                if (data.token) {
+                    window.localStorage.setItem("token", data.token);
+                    router.push("/");
+                }
+            } catch (error) {
+                console.error("Error logging in:", error);
+                setLoginError('Invalid email or password');
+            }
         } else {
-            console.log("Error logging in.")
-            console.log(errors);
+            console.error("Validation errors:", errors);
         }
-
     }
     
     return (
@@ -103,6 +111,24 @@ export default function SignIn() {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+          {loginError && (
+            <div className="mb-6 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400 font-normal text-center">
+                {loginError}
+              </p>
+            </div>
+          )}
+          
+          {Object.keys(formState.errors).length > 0 && (
+            <div className="mb-6 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/20">
+              {Object.values(formState.errors).map((error, index) => (
+                <p key={index} className="text-sm text-red-400 font-normal">
+                  {error}
+                </p>
+              ))}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium leading-6 text-white">

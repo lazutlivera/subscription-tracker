@@ -12,7 +12,6 @@ export default function Report() {
   const { isLoading, isTokenValid } = useCheckAuth();
   const router = useRouter();
 
-  // Authentication and data loading
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -46,17 +45,7 @@ export default function Report() {
       }
     };
 
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        setError('Loading timeout. Please refresh the page.');
-        console.error('Loading timeout');
-      }
-    }, 5000); // 5 seconds timeout
-
     loadData();
-
-    return () => clearTimeout(timeoutId);
   }, [isLoading, isTokenValid, router]);
 
   // Show loading state while checking authentication
