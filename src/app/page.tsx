@@ -10,6 +10,7 @@ import SubscriptionList from '@/components/SubscriptionList';
 import { format } from 'date-fns';
 import useCheckAuth from '@/hooks/useCheckAuth';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -55,18 +56,17 @@ export default function Home() {
       setSubscriptions(updatedSubscriptions);
       setEditingSubscription(null);
       
-      // Save to localStorage
       localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
     } else {
       // Add new subscription
       const subscriptionWithId = {
         ...newSubscription,
         id: Date.now().toString(),
+        // Calculate next payment date based on start date
+        nextPaymentDate: new Date(newSubscription.startDate),
       };
       const updatedSubscriptions = [...subscriptions, subscriptionWithId];
       setSubscriptions(updatedSubscriptions);
-      
-      // Save to localStorage
       
       localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
     }
@@ -128,7 +128,8 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-[#13131A]">
       <div className="max-w-7xl mx-auto space-y-8">
-        <section className="flex justify-end gap-4">
+        <section className="flex justify-end gap-4 items-center">
+          <NotificationBell />
           <button 
             className="w-[10%] bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
             onClick={() => router.push('/report')}
@@ -137,6 +138,12 @@ export default function Home() {
           </button>
           <button 
             className="w-[10%] bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
+            onClick={() => router.push('/analytics')}
+          >
+            View Trends
+          </button>
+          <button 
+            className="w-[10%] bg-red-500 hover:bg-red-600 text-white rounded-lg p-3 transition-colors"
             onClick={isLoggedIn ? handleLogout : () => window.location.href = '/signin'}
           >
             {isLoggedIn ? 'Logout' : 'Login'}

@@ -74,6 +74,19 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
+  const getRecurringDates = (subscription: Subscription) => {
+    const dates = [];
+    let currentDate = new Date(subscription.startDate);
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1); // Look ahead one year
+
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    return dates;
+  };
+
   return (
     <div className="bg-[#1C1C27] rounded-xl p-6 shadow-lg">
       <div className="flex justify-between items-center mb-6">
@@ -179,20 +192,22 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
               {hasSubscriptions && subscriptionsForDay.length > 0 && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
                                hidden group-hover:block z-10">
-                  <div className="bg-gray-800 rounded-lg shadow-lg p-2 whitespace-nowrap">
+                  <div className="bg-gray-800 rounded-lg shadow-lg p-2 min-w-[150px]">
                     {subscriptionsForDay.map((sub, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-white py-1">
-                        {sub.logo && (
-                          <Image
-                            src={sub.logo}
-                            alt={sub.name}
-                            width={16}
-                            height={16}
-                            className="rounded-full"
-                          />
-                        )}
-                        <span>{sub.name}</span>
-                        <span className="text-gray-400">${sub.price}</span>
+                      <div key={idx} className="flex items-center justify-between gap-2 text-sm text-white py-1">
+                        <div className="flex items-center gap-2">
+                          {sub.logo && (
+                            <Image
+                              src={sub.logo}
+                              alt={sub.name}
+                              width={16}
+                              height={16}
+                              className="rounded-full"
+                            />
+                          )}
+                          <span>{sub.name}</span>
+                        </div>
+                        <span className="text-gray-400 ml-2">${sub.price}</span>
                       </div>
                     ))}
                   </div>

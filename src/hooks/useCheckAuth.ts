@@ -31,6 +31,7 @@ export default function useCheckAuth() {
         }
       } catch (error) {
         console.error('Auth check error:', error);
+        localStorage.removeItem('token');
         setIsTokenValid(false);
       } finally {
         setIsLoading(false);

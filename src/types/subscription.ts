@@ -5,4 +5,6 @@ export interface Subscription {
   startDate: Date;
   canceledDate: Date | null;
   category: string;
+  nextPaymentDate: Date;
+  logo?: string | null;
 }

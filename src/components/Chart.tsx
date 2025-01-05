@@ -11,6 +11,25 @@ interface ChartProps {
   currentDate: Date;
 }
 
+// Create a more diverse color palette
+const chartColors = [
+  '#6C5DD3', // Purple (primary)
+  '#FF8F6B', // Coral
+  '#4ECB71', // Green
+  '#3E7BFA', // Blue
+  '#FFB800', // Yellow
+  '#FF6B6B', // Red
+  '#45B36B', // Emerald
+  '#9B51E0', // Violet
+  '#00C4B4', // Teal
+  '#FF9F43', // Orange
+  '#EA5455', // Pink
+  '#28C76F', // Mint
+  '#4B4DED', // Indigo
+  '#FF6B6B', // Salmon
+  '#43A047', // Forest
+];
+
 export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
   // Move calculateCost function to the top
   const calculateCost = (sub: Subscription) => {
@@ -69,9 +88,8 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
     labels: labels,
     theme: {
       mode: 'dark' as const,
-      palette: 'palette1',
     },
-    colors: ['#6C5DD3', '#E91E63', '#00B5D8', '#4CAF50', '#FFA500'], // Modern color palette
+    colors: chartColors, // Use our new color palette instead of the hardcoded one
     plotOptions: {
       pie: {
         donut: {
@@ -143,7 +161,7 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
               <div className="flex items-center gap-3">
                 <div 
                   className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: options.colors[index % options.colors.length] }}
+                  style={{ backgroundColor: chartColors[index % chartColors.length] }}
                 />
                 <span className="text-white">{sub.name}</span>
               </div>

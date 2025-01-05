@@ -131,9 +131,9 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     name: '',
     price: '',
     startDate: new Date().toISOString().split('T')[0],
-    logo: null as string | null, // Changed from empty string to null
     canceledDate: null as string | null,
     billingCycle: 'monthly' as const,
+    logo: null as string | null,
   });
   const [error, setError] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -145,12 +145,11 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
         name: existingSubscription.name,
         price: existingSubscription.price.toString(),
         startDate: new Date(existingSubscription.startDate).toISOString().split('T')[0],
-        logo: existingSubscription.logo,
-        // Don't set a default date for canceledDate
         canceledDate: existingSubscription.canceledDate 
           ? new Date(existingSubscription.canceledDate).toISOString().split('T')[0]
-          : '',
+          : null,
         billingCycle: 'monthly',
+        logo: existingSubscription.logo || commonSubscriptions.find(s => s.name === existingSubscription.name)?.logo || null,
       });
       setIsCustom(!commonSubscriptions.some(sub => sub.name === existingSubscription.name));
     }
@@ -159,6 +158,19 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.name.trim()) {
+      setError('Please select or enter a subscription name');
+      setIsError(true);
+      return;
+    }
+
+    if (!formData.price && !commonSubscriptions.find(s => s.name === formData.name)?.defaultPrice) {
+      setError('Please enter a valid price');
+      setIsError(true);
+      return;
+    }
+
     // Only check for duplicates if this is a new subscription
     if (!existingSubscription) {
       const isDuplicate = subscriptions.some(
@@ -185,23 +197,61 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       ? Number(formData.price) 
       : (Number(formData.price) || commonSubscriptions.find(s => s.name === formData.name)?.defaultPrice || 0);
 
-    onSubmit({
+    const startDate = new Date(formData.startDate);
+    const today = new Date();
+    
+    // Simplified next payment date calculation
+    const calculateNextPaymentDate = (baseDate: Date): Date => {
+      const date = new Date(baseDate);
+      const today = new Date();
+      
+      // If the date is in the future, return it
+      if (date > today) {
+        return date;
+      }
+      
+      // Calculate all possible payment dates until we find one in the future
+      let currentDate = new Date(date);
+      while (currentDate <= today) {
+        currentDate = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() + 1,
+          currentDate.getDate()
+        );
+      }
+      
+      return currentDate;
+    };
+
+    const nextPaymentDate = calculateNextPaymentDate(startDate);
+
+    console.log('FORM: Saving subscription with dates:', {
       name: formData.name,
-      price: price,
-      startDate: new Date(formData.startDate),
-      logo: formData.logo || commonSubscriptions.find(s => s.name === formData.name)?.logo || null,
-      billingCycle: 'monthly',
-      canceledDate: formData.canceledDate ? new Date(formData.canceledDate) : null,
+      startDate: startDate.toISOString(),
+      nextPaymentDate: nextPaymentDate.toISOString(),
+      rawNextPayment: nextPaymentDate
     });
+
+    const subscription: Omit<Subscription, "id"> = {
+      name: formData.name,
+      price: Number(price),
+      startDate: startDate,
+      category: 'default',
+      canceledDate: formData.canceledDate ? new Date(formData.canceledDate) : null,
+      nextPaymentDate: nextPaymentDate,
+      logo: formData.logo || commonSubscriptions.find(s => s.name === formData.name)?.logo || null,
+    };
+
+    onSubmit(subscription);
 
     // Reset form
     setFormData({
       name: '',
       price: '',
       startDate: new Date().toISOString().split('T')[0],
-      logo: null,
       canceledDate: null,
       billingCycle: 'monthly',
+      logo: null,
     });
     setIsCustom(false);
   };
