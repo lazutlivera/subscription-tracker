@@ -1,7 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
+import { Pool } from 'pg';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -14,18 +19,41 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'fallback-secret';
     
-    // Verify the token using your JWT_SECRET
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined');
+    // Verify and decode token
+    const decoded = jwt.verify(token, secret) as {
+      id: string;
+      email: string;
+      name: string;
+    };
+
+    // Optional: Check if user still exists in database
+    const result = await pool.query(
+      'SELECT id, email, name FROM users WHERE id = $1',
+      [decoded.id]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
     }
 
-    jwt.verify(token, secret);
-    
-    return res.status(200).json({ message: 'Token is valid' });
+    return res.status(200).json({ 
+      message: 'Token is valid',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
   } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    
     console.error('Token verification error:', error);
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(500).json({ message: 'Error verifying token' });
   }
 }

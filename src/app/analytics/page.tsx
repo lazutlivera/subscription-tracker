@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Subscription } from '@/types/subscription';
-import useCheckAuth from '@/hooks/useCheckAuth';
 import { format, subMonths } from 'date-fns';
 import {
   LineChart,
@@ -15,31 +14,51 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/utils/supabase';
 
 export default function Analytics() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const { isLoading, isTokenValid } = useCheckAuth();
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!isTokenValid) {
-        router.push('/signin');
-        return;
-      }
+    const loadSubscriptions = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
 
-      const loadedSubscriptions = JSON.parse(
-        localStorage.getItem('subscriptions') || '[]',
-        (key, value) => {
-          if (key === 'startDate' || key === 'canceledDate') {
-            return value ? new Date(value) : null;
-          }
-          return value;
+        if (data) {
+          const transformedData = data.map(sub => ({
+            id: sub.id,
+            name: sub.name,
+            price: Number(sub.price),
+            startDate: new Date(sub.start_date),
+            nextPaymentDate: new Date(sub.next_payment_date),
+            canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
+            category: sub.category,
+            logo: sub.logo
+          }));
+          setSubscriptions(transformedData);
         }
-      );
-      setSubscriptions(loadedSubscriptions);
-    }
-  }, [isLoading, isTokenValid, router]);
+      } else {
+        const saved = localStorage.getItem('subscriptions');
+        if (saved) {
+          const loadedSubscriptions = JSON.parse(saved, (key, value) => {
+            if (key === 'startDate' || key === 'canceledDate' || key === 'nextPaymentDate') {
+              return value ? new Date(value) : null;
+            }
+            return value;
+          });
+          setSubscriptions(loadedSubscriptions);
+        }
+      }
+    };
+
+    loadSubscriptions();
+  }, [user]);
 
   const calculateMonthlySpending = () => {
     const last12Months = Array.from({ length: 12 }, (_, i) => {
@@ -65,31 +84,28 @@ export default function Analytics() {
     return last12Months;
   };
 
-  const predictNextMonthSpending = () => {
-    const monthlyData = calculateMonthlySpending();
-    if (monthlyData.length < 3) return null;
+  const calculateCategorySpending = () => {
+    const categoryTotals = subscriptions.reduce((acc, sub) => {
+      const category = sub.category || 'Other';
+      if (!acc[category]) {
+        acc[category] = {
+          total: 0,
+          count: 0,
+          subscriptions: []
+        };
+      }
+      acc[category].total += sub.price;
+      acc[category].count += 1;
+      acc[category].subscriptions.push(sub.name);
+      return acc;
+    }, {} as Record<string, { total: number; count: number; subscriptions: string[] }>);
 
-    // Simple linear regression for prediction
-    const recentMonths = monthlyData.slice(-3);
-    const trend = (recentMonths[2].total - recentMonths[0].total) / 2;
-    const predictedAmount = recentMonths[2].total + trend;
-
-    return {
-      predicted: Math.max(0, predictedAmount),
-      trend: trend > 0 ? 'increasing' : trend < 0 ? 'decreasing' : 'stable'
-    };
+    return Object.entries(categoryTotals)
+      .sort((a, b) => b[1].total - a[1].total);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#13131A] text-white flex items-center justify-center">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    );
-  }
-
   const monthlyData = calculateMonthlySpending();
-  const prediction = predictNextMonthSpending();
+  const categoryData = calculateCategorySpending();
 
   return (
     <div className="min-h-screen bg-[#13131A] text-white p-8">
@@ -104,64 +120,61 @@ export default function Analytics() {
           </button>
         </div>
 
-        {/* Spending Trend Chart */}
-        <div className="bg-[#1C1C24] p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Monthly Spending Trend</h2>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#666"
-                />
-                <YAxis 
-                  stroke="#666"
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1C1C24',
-                    border: '1px solid #333',
-                    borderRadius: '4px'
-                  }}
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="total" 
-                  stroke="#6C5DD3" 
-                  name="Monthly Spending"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Prediction Card */}
-        {prediction && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-[#1C1C24] p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Next Month Prediction</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-400">Predicted Spending</p>
-                <p className="text-2xl font-bold">${prediction.predicted.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Trend</p>
-                <p className={`text-lg ${
-                  prediction.trend === 'increasing' 
-                    ? 'text-red-400' 
-                    : prediction.trend === 'decreasing' 
-                    ? 'text-green-400' 
-                    : 'text-gray-400'
-                }`}>
-                  {prediction.trend.charAt(0).toUpperCase() + prediction.trend.slice(1)}
-                </p>
-              </div>
+            <h2 className="text-xl font-semibold mb-4">Monthly Spending Trend</h2>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#666"
+                  />
+                  <YAxis 
+                    stroke="#666"
+                    tickFormatter={(value) => `£${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1C1C24',
+                      border: '1px solid #333',
+                      borderRadius: '4px'
+                    }}
+                    formatter={(value) => [`£${Number(value).toFixed(2)}`, "Monthly Spending"]}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="#6C5DD3" 
+                    name="Monthly Spending"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        )}
+
+          <div className="bg-[#1C1C24] p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Spending by Category</h2>
+            <div className="space-y-4">
+              {categoryData.map(([category, data]) => (
+                <div key={category} className="border-b border-gray-800 pb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-medium">{category}</h3>
+                    <p className="text-lg font-bold">£{data.total.toFixed(2)}</p>
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    {data.count} subscription{data.count !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {data.subscriptions.join(', ')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

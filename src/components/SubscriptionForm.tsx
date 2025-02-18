@@ -4,128 +4,56 @@ import React, { useState, useEffect } from 'react';
 import { Subscription } from '../types/subscription';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import SubscriptionList from './SubscriptionList';
+import { subscriptionCategories, defaultCategories, SubscriptionCategory } from '@/utils/categories';
+import { createPaymentDueNotification } from '@/utils/notifications';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/utils/supabase';
+import { subscriptionData } from '@/data/subscriptionData';
 
 interface SubscriptionFormProps {
   onSubmit: (subscription: Omit<Subscription, "id">) => void;
   existingSubscription: Subscription | null;
   subscriptions: Subscription[];
+  onCancelEdit?: () => void;
 }
 
-interface CommonSubscription {
-  name: string;
-  logo: string;
-  defaultPrice: number; // Changed to only monthly price
-}
+const generateInitialsLogo = (name: string): string => {
+  // Split the name into words and get initials
+  const initials = name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2); // Only take first two initials
 
+  // Create a canvas to generate the logo
+  const canvas = document.createElement('canvas');
+  canvas.width = 100;
+  canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+  
+  if (ctx) {
+    // Set background
+    ctx.fillStyle = '#6C5DD3';
+    ctx.fillRect(0, 0, 100, 100);
+    
+    // Set text properties
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 40px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Draw initials
+    ctx.fillText(initials, 50, 50);
+    
+    // Convert to data URL
+    return canvas.toDataURL('image/png');
+  }
+  
+  return '';
+};
 
-
-const commonSubscriptions: CommonSubscription[] = [
-  // Existing Subscriptions
-  {
-    name: 'Netflix',
-    logo: 'https://logo.clearbit.com/netflix.com',
-    defaultPrice: 15.49,
-  },
-  {
-    name: 'Spotify',
-    logo: 'https://logo.clearbit.com/spotify.com',
-    defaultPrice: 9.99,
-  },
-  {
-    name: 'Disney+',
-    logo: 'https://logo.clearbit.com/disneyplus.com',
-    defaultPrice: 7.99,
-  },
-  // New Subscriptions
-  {
-    name: 'Hulu',
-    logo: 'https://logo.clearbit.com/hulu.com',
-    defaultPrice: 5.99,
-  },
-  {
-    name: 'Amazon Prime',
-    logo: 'https://logo.clearbit.com/amazon.com',
-    defaultPrice: 12.99,
-  },
-  {
-    name: 'HBO Max',
-    logo: 'https://logo.clearbit.com/hbomax.com',
-    defaultPrice: 14.99,
-  },
-  {
-    name: 'Apple Music',
-    logo: 'https://logo.clearbit.com/apple.com',
-    defaultPrice: 9.99,
-  },
-  {
-    name: 'YouTube Premium',
-    logo: 'https://logo.clearbit.com/youtube.com',
-    defaultPrice: 11.99,
-  },
-  {
-    name: 'Adobe Creative Cloud',
-    logo: 'https://logo.clearbit.com/adobe.com',
-    defaultPrice: 52.99,
-  },
-  {
-    name: 'Dropbox',
-    logo: 'https://logo.clearbit.com/dropbox.com',
-    defaultPrice: 9.99,
-  },
-  {
-    name: 'Microsoft 365',
-    logo: 'https://logo.clearbit.com/microsoft.com',
-    defaultPrice: 6.99,
-  },
-  {
-    name: 'Slack',
-    logo: 'https://logo.clearbit.com/slack.com',
-    defaultPrice: 6.67,
-  },
-  // Added 9 More Subscriptions
-  {
-    name: 'Zoom',
-    logo: 'https://logo.clearbit.com/zoom.us',
-    defaultPrice: 14.99,
-  },
-  {
-    name: 'Trello',
-    logo: 'https://logo.clearbit.com/trello.com',
-    defaultPrice: 9.99,
-  },
-  {
-    name: 'GitHub',
-    logo: 'https://logo.clearbit.com/github.com',
-    defaultPrice: 4.0,
-  },
-  {
-    name: 'LinkedIn Premium',
-    logo: 'https://logo.clearbit.com/linkedin.com',
-    defaultPrice: 29.99,
-  },
-  {
-    name: 'Dropbox Business',
-    logo: 'https://logo.clearbit.com/dropbox.com',
-    defaultPrice: 15.0,
-  },
-  {
-    name: 'Evernote',
-    logo: 'https://logo.clearbit.com/evernote.com',
-    defaultPrice: 7.99,
-  },
-  {
-    name: 'Canva Pro',
-    logo: 'https://logo.clearbit.com/canva.com',
-    defaultPrice: 12.95,
-  },
-  {
-    name: 'Notion',
-    logo: 'https://logo.clearbit.com/notion.so',
-    defaultPrice: 4.0,
-  },
-];
-
-export default function SubscriptionForm({ onSubmit, existingSubscription, subscriptions }: SubscriptionFormProps) {
+export default function SubscriptionForm({ onSubmit, existingSubscription, subscriptions, onCancelEdit }: SubscriptionFormProps) {
   const [isCustom, setIsCustom] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -133,10 +61,12 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     startDate: new Date().toISOString().split('T')[0],
     canceledDate: null as string | null,
     billingCycle: 'monthly' as const,
-    logo: null as string | null,
+    logo: '' as string,
+    category: 'Other' as SubscriptionCategory,
   });
   const [error, setError] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const { user } = useAuth();
 
   // Initialize form with existing subscription data if provided
   useEffect(() => {
@@ -149,13 +79,14 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
           ? new Date(existingSubscription.canceledDate).toISOString().split('T')[0]
           : null,
         billingCycle: 'monthly',
-        logo: existingSubscription.logo || commonSubscriptions.find(s => s.name === existingSubscription.name)?.logo || null,
+        logo: existingSubscription.logo || '',
+        category: (existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other') as SubscriptionCategory,
       });
-      setIsCustom(!commonSubscriptions.some(sub => sub.name === existingSubscription.name));
+      setIsCustom(false);
     }
   }, [existingSubscription]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
@@ -165,7 +96,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       return;
     }
 
-    if (!formData.price && !commonSubscriptions.find(s => s.name === formData.name)?.defaultPrice) {
+    if (!formData.price) {
       setError('Please enter a valid price');
       setIsError(true);
       return;
@@ -195,7 +126,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
 
     const price = isCustom 
       ? Number(formData.price) 
-      : (Number(formData.price) || commonSubscriptions.find(s => s.name === formData.name)?.defaultPrice || 0);
+      : Number(formData.price);
 
     const startDate = new Date(formData.startDate);
     const today = new Date();
@@ -236,13 +167,27 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       name: formData.name,
       price: Number(price),
       startDate: startDate,
-      category: 'default',
+      category: (formData.category || defaultCategories[formData.name] || 'Other') as SubscriptionCategory,
       canceledDate: formData.canceledDate ? new Date(formData.canceledDate) : null,
       nextPaymentDate: nextPaymentDate,
-      logo: formData.logo || commonSubscriptions.find(s => s.name === formData.name)?.logo || null,
+      logo: isCustom ? generateInitialsLogo(formData.name) : (formData.logo || ''),
     };
 
     onSubmit(subscription);
+
+    // Create notification after subscription is saved
+    if (user) {
+      const { data } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('name', subscription.name)
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        await createPaymentDueNotification({ ...subscription, id: data.id }, user.id);
+      }
+    }
 
     // Reset form
     setFormData({
@@ -251,17 +196,27 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       startDate: new Date().toISOString().split('T')[0],
       canceledDate: null,
       billingCycle: 'monthly',
-      logo: null,
+      logo: '',
+      category: 'Other',
     });
     setIsCustom(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value  
-    }));
+    setFormData(prev => {
+      const updates = { [name]: value };
+      
+      // Auto-select category, price, and logo when subscription name changes
+      if (name === 'name' && !isCustom) {
+        const selectedSub = subscriptionData.find(sub => sub.name === value);
+        updates.category = defaultCategories[value] || 'Other';
+        updates.price = selectedSub ? selectedSub.default_price.toString() : '';
+        updates.logo = selectedSub ? selectedSub.logo : '';
+      }
+      
+      return { ...prev, ...updates };
+    });
     setError(null);
     setIsError(false);
   };
@@ -275,54 +230,73 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
   };
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-6 shadow-lg">
+    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-6 shadow-lg">
       {isError && error && (
         <div className="text-red-500 mb-4">{error}</div>
       )}
-      <h2 className="text-xl font-semibold text-white mb-6">
+      <h2 className="text-lg md:text-xl font-semibold text-white mb-4 md:mb-6">
         {existingSubscription ? 'Edit Subscription' : 'Add New Subscription'}
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         {!existingSubscription ? (
-          <div className="grid grid-cols-2 gap-4">
-            {!isCustom && (
-              <select
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="bg-gray-800 text-white rounded-lg p-3 w-full"
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {!isCustom && (
+                <select
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="bg-gray-800 text-white rounded-lg p-2 md:p-3 w-full text-sm md:text-base"
+                >
+                  <option value="">Select a subscription</option>
+                  {subscriptionData.map((sub) => (
+                    <option key={sub.name} value={sub.name}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {isCustom && (
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Subscription name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="bg-gray-800 text-white rounded-lg p-2 md:p-3 text-sm md:text-base"
+                  required={isCustom}
+                />
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsCustom(!isCustom)}
+                className="flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-colors text-sm md:text-base"
               >
-                <option value="">Select a subscription</option>
-                {commonSubscriptions.map((sub) => (
-                  <option key={sub.name} value={sub.name}>
-                    {sub.name}
+                <PlusIcon className="h-5 w-5" />
+                {isCustom ? 'Choose from list' : 'Add custom'}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="category" className="text-gray-400 text-sm">Category</label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="bg-gray-800 text-white rounded-lg p-2 md:p-3 h-10 md:h-12 w-full text-sm md:text-base"
+              >
+                {subscriptionCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
                   </option>
                 ))}
               </select>
-            )}
-
-            {isCustom && (
-              <input
-                type="text"
-                name="name"
-                placeholder="Subscription name"
-                value={formData.name}
-                onChange={handleChange}
-                className="bg-gray-800 text-white rounded-lg p-3"
-                required={isCustom}
-              />
-            )}
-
-            <button
-              type="button"
-              onClick={() => setIsCustom(!isCustom)}
-              className="flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <PlusIcon className="h-5 w-5" />
-              {isCustom ? 'Choose from list' : 'Add custom'}
-            </button>
-          </div>
+            </div>
+          </>
         ) : (
           <div className="flex flex-col gap-1">
             <label htmlFor="name" className="text-gray-400 text-sm">Name</label>
@@ -332,13 +306,32 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="bg-gray-800 text-white rounded-lg p-3 h-12 w-full"
+              className="bg-gray-800 text-white rounded-lg p-2 md:p-3 h-10 md:h-12 w-full text-sm md:text-base"
               disabled
             />
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        {existingSubscription && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="category" className="text-gray-400 text-sm">Category</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="bg-gray-800 text-white rounded-lg p-2 md:p-3 h-10 md:h-12 w-full text-sm md:text-base"
+            >
+              {subscriptionCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="price" className="text-gray-400 text-sm">Price</label>
             <input
@@ -347,13 +340,10 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
               name="price"
               value={formData.price}
               onChange={handleChange}
-              placeholder={
-                !existingSubscription && !isCustom 
-                  ? `${commonSubscriptions.find(s => s.name === formData.name)?.defaultPrice || 'Price (optional)'}`
-                  : 'Price (required)'
-              }
-              className="bg-gray-800 text-white rounded-lg p-3 h-12 w-full"
-              required={isCustom || !!existingSubscription}
+              placeholder="Price (required)"
+              className="bg-gray-800 text-white rounded-lg p-2 md:p-3 h-10 md:h-12 w-full text-sm md:text-base"
+              required={true}
+              step="0.01"
             />
           </div>
 
@@ -365,31 +355,28 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
               name="startDate"
               value={formData.startDate}
               onChange={handleChange}
-              className="bg-gray-800 text-white rounded-lg p-3 h-12 w-full"
+              className="bg-gray-800 text-white rounded-lg p-2 md:p-3 h-10 md:h-12 w-full text-sm md:text-base"
             />
           </div>
-
-          {existingSubscription && (
-            <div className="flex flex-col gap-1">
-              <label htmlFor="canceledDate" className="text-gray-400 text-sm">Cancellation Date</label>
-              <input
-                id="canceledDate"
-                type="date"
-                name="canceledDate"
-                value={formData.canceledDate || ''}
-                onChange={handleChange}
-                className="bg-gray-800 text-white rounded-lg p-3 h-12 w-full"
-              />
-            </div>
-          )}
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
-        >
-          {existingSubscription ? 'Update Subscription' : 'Add Subscription'}
-        </button>
+        <div className="flex gap-2 md:gap-4">
+          <button
+            type="submit"
+            className="flex-1 bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-2 md:p-3 transition-colors text-sm md:text-base"
+          >
+            {existingSubscription ? 'Update Subscription' : 'Add Subscription'}
+          </button>
+          {existingSubscription && (
+            <button
+              type="button"
+              onClick={() => onCancelEdit?.()}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-lg p-2 md:p-3 transition-colors text-sm md:text-base"
+            >
+              Cancel Edit
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

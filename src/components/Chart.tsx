@@ -100,7 +100,7 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
               show: true,
               label: 'Total Monthly',
               color: '#FFFFFF',
-              formatter: () => `$${totalCost.toFixed(2)}`,
+              formatter: () => `£${totalCost.toFixed(2)}`,
             },
           },
         },
@@ -115,7 +115,7 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
     tooltip: {
       theme: 'dark',
       y: {
-        formatter: (val: number) => `$${val.toFixed(2)}`,
+        formatter: (val: number) => `£${val.toFixed(2)}`,
       },
     },
     stroke: {
@@ -124,38 +124,38 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
   };
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-8 min-h-[555px]">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 min-h-[400px] md:min-h-[555px]">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8">
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">Subscription Overview</h2>
-          <div className="flex gap-12"> {/* Increased gap for better spacing */}
+          <h2 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-4">Subscription Overview</h2>
+          <div className="flex gap-6 md:gap-12">
             <div>
               <p className="text-3xl font-bold text-white">
-                ${totalCost.toFixed(2)}
+                £{totalCost.toFixed(2)}
                 <span className="text-sm text-gray-400 ml-2">/ month</span>
               </p>
               <p className="text-sm text-gray-400 mt-1">Total Monthly Cost</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-white">${spentAmount.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-white">£{spentAmount.toFixed(2)}</p>
               <p className="text-sm text-gray-400 mt-1">Total Spent to Date</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex">
-        <div className="w-1/2">
+      <div className="flex flex-col md:flex-row">
+        <div className="w-full md:w-1/2">
           <Chart
             options={options}
             series={series}
             type="donut"
             width="100%"
-            height="320"
+            height={window.innerWidth < 768 ? "250" : "320"}
           />
         </div>
         
-        <div className="w-1/2 pl-8 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-8">
           {subscriptions.map((sub, index) => (
             <div key={index} className="flex items-center justify-between py-2 border-b border-gray-800">
               <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
                 <span className="text-white">{sub.name}</span>
               </div>
               <div className="text-gray-400">
-                ${sub.price.toFixed(2)}
+                £{sub.price.toFixed(2)}
                 <span className="text-sm ml-2">
                   ({((sub.price / totalCost) * 100).toFixed(1)}%)
                 </span>

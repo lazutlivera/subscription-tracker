@@ -1,184 +1,112 @@
-import React, { useEffect, useState } from "react";
-import endpoints from "../../utils/endpoints";
-import { useRouter } from "next/navigation";
-import useCheckAuth from "@/hooks/useCheckAuth";
+'use client';
 
-interface FormValues {
-    email?: string;
-    password?: string;
-}
-
-interface FormState {
-    values: FormValues;
-    errors: FormValues;
-  }
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SignIn() {
-  const [formState, setFormState] = useState<FormState>({values: {email: "", password: ""}, errors: {}});
-  const [loginError, setLoginError] = useState<string>('');
-
-  const { isLoading, isTokenValid } = useCheckAuth();
-
-  if (isLoading) {
-    //TODO: Add custom loading screen/logic at somepoint, currently just a whitepage
-  }
-
-  if(isTokenValid) {
-    console.log("verified token");
-    return null
-  }
-  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const { signIn, isLoading: isAuthLoading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-    const signIn = async (userData: { email: string; password: string }) => {
-        try {
-            const response = await fetch(endpoints.auth.login, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Failed to login");
-            }
-
-            return data; // Return the full response data
-
-        } catch (error) {
-            console.error(error);
-            throw error; // Throw the error instead of returning it
-        } 
-    };
-
-    const validate = () => {
-        const newErrors: FormValues = {};
-
-        const {values} = formState;
-
-        if (!values.email) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-            newErrors.email = 'Email address is invalid';
-        }
-
-        setFormState({values: values, errors: newErrors});
-        return newErrors;
-    };
-
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = event.target;
-        const newValues = {...formState.values, [name]: value};
-        setFormState({values: newValues, errors: formState.errors});
-    };
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setLoginError('');
-        const form = event.currentTarget;
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-
-        const errors = validate();
-        const isValid = Object.keys(errors).length === 0;
-
-        if(isValid){
-            try {
-                const userData = {email: email, password: password };
-                const data = await signIn(userData);
-                
-                if (data.token) {
-                    window.localStorage.setItem("token", data.token);
-                    router.push("/");
-                }
-            } catch (error) {
-                console.error("Error logging in:", error);
-                setLoginError('Invalid email or password');
-            }
-        } else {
-            console.error("Validation errors:", errors);
-        }
+  useEffect(() => {
+    // Check for verification message in URL
+    const urlMessage = searchParams?.get('message');
+    if (urlMessage) {
+      setMessage(urlMessage);
     }
-    
-    return (
-        <>
-       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white">
-            Log In
-          </h2>
-        </div>
+  }, [searchParams]);
 
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          {loginError && (
-            <div className="mb-6 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/20">
-              <p className="text-sm text-red-400 font-normal text-center">
-                {loginError}
-              </p>
-            </div>
-          )}
-          
-          {Object.keys(formState.errors).length > 0 && (
-            <div className="mb-6 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/20">
-              {Object.values(formState.errors).map((error, index) => (
-                <p key={index} className="text-sm text-red-400 font-normal">
-                  {error}
-                </p>
-              ))}
-            </div>
-          )}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium leading-6 text-white">
-                Email Address
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  formNoValidate
-                  autoComplete="email"
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
+    try {
+      setIsSubmitting(true);
+      await signIn(formData.email, formData.password);
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium leading-6 text-white">
-                  Password
-                </label>
-              </div>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
+  if (isAuthLoading) return <div>Loading...</div>;
+  if (isSubmitting) return <div>Signing in...</div>;
 
-            <div>
-              <button
-                type="submit"
-                className="w-full bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
-              >
-                Sign In
-              </button>
-            </div>
-          </form>
-        </div>
+  return (
+    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white">
+          Sign in to your account
+        </h2>
       </div>
-</>
-)
-}
 
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        {message && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500 text-blue-500 rounded-lg">
+            {message}
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500 text-red-500 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium leading-6 text-white">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="block w-full rounded-lg border-0 bg-gray-800 p-3 text-white shadow-sm focus:ring-2 focus:ring-[#6C5DD3]"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium leading-6 text-white">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="block w-full rounded-lg border-0 bg-gray-800 p-3 text-white shadow-sm focus:ring-2 focus:ring-[#6C5DD3]"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-3 transition-colors"
+          >
+            Sign In
+          </button>
+        </form>
+
+        <p className="mt-10 text-center text-sm text-gray-400">
+          Don't have an account?{' '}
+          <Link href="/signup" className="text-[#6C5DD3] hover:text-[#5B4EC2]">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+} 

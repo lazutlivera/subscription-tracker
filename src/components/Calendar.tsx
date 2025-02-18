@@ -40,20 +40,18 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
       );
       const today = new Date();
 
-      // Check if subscription was cancelled before it even started
+    
       if (subCancelDate && subCancelDate < subStartDate) {
         return false;
       }
 
-      // For subscriptions cancelled within trial/before first payment
       if (subCancelDate && subStartDate > today && subCancelDate <= today) {
         return false;
       }
 
-      // Check if the day matches the subscription start date
       const isDayMatch = day === subStartDate.getDate();
       
-      // Check if we're in or after the start month/year
+
       const isCurrentOrAfterStart = 
         (currentDate.getFullYear() > subStartDate.getFullYear()) ||
         (currentDate.getFullYear() === subStartDate.getFullYear() && 
@@ -78,7 +76,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
     const dates = [];
     let currentDate = new Date(subscription.startDate);
     const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1); // Look ahead one year
+    endDate.setFullYear(endDate.getFullYear() + 1);
 
     while (currentDate <= endDate) {
       dates.push(new Date(currentDate));
@@ -88,9 +86,9 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
   };
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-6 shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-white">Calendar</h2>
+    <div className="bg-[#1C1C27] rounded-xl p-4 pb-8 md:p-8 h-fit max-h-[600px]">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-white">Subscription Calendar</h2>
         <div className="flex items-center w-64">
           <button 
             onClick={previousMonth}
@@ -110,7 +108,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-sm text-gray-400 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="text-center text-sm text-gray-400 py-2">
             {day}
@@ -118,7 +116,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 md:gap-2">
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
           <div key={`empty-${index}`} className="aspect-square" />
         ))}
@@ -143,7 +141,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
             >
               <span className={`
                 text-sm ${hasSubscriptions ? 'text-[#6C5DD3]' : 'text-gray-400'}
-                group-hover:text-white transition-colors
+                group-hover:text-white transition-colors font-medium
               `}>
                 {day}
               </span>
@@ -156,15 +154,15 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
                       return (
                         <div
                           key={idx}
-                          className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm"
-                          title={sub.name}
+                          className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm hover:scale-110 transition-transform"
+                          title={`${sub.name} - £${sub.price}`}
                         >
                           {sub.logo && (
                             <Image
                               src={sub.logo}
                               alt={sub.name}
-                              width={24}
-                              height={24}
+                              width={32}
+                              height={32}
                               className="w-full h-full object-cover"
                             />
                           )}
@@ -174,10 +172,10 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
                       return (
                         <div 
                           key={idx}
-                          className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm flex items-center justify-center"
-                          title={`+${subscriptionsForDay.length - 2} more`}
+                          className="w-6 md:w-8 h-6 md:h-8 rounded-full bg-gray-800 border border-gray-700 overflow-hidden shadow-sm flex items-center justify-center hover:bg-gray-700 transition-colors"
+                          title={`${subscriptionsForDay.length - 2} more subscriptions`}
                         >
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-gray-300 font-medium">
                             +{subscriptionsForDay.length - 2}
                           </span>
                         </div>
@@ -188,26 +186,23 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
                 </div>
               )}
 
-              {/* Hover tooltip for multiple subscriptions */}
-              {hasSubscriptions && subscriptionsForDay.length > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
-                               hidden group-hover:block z-10">
-                  <div className="bg-gray-800 rounded-lg shadow-lg p-2 min-w-[150px]">
+        
+              {hasSubscriptions && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                  <div className="bg-[#23232D] rounded-lg shadow-xl p-2 whitespace-nowrap border border-gray-700">
                     {subscriptionsForDay.map((sub, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-2 text-sm text-white py-1">
-                        <div className="flex items-center gap-2">
-                          {sub.logo && (
-                            <Image
-                              src={sub.logo}
-                              alt={sub.name}
-                              width={16}
-                              height={16}
-                              className="rounded-full"
-                            />
-                          )}
-                          <span>{sub.name}</span>
-                        </div>
-                        <span className="text-gray-400 ml-2">${sub.price}</span>
+                      <div key={idx} className="flex items-center gap-3 py-1.5 px-1 hover:bg-gray-800 rounded">
+                        {sub.logo && (
+                          <Image
+                            src={sub.logo}
+                            alt={sub.name}
+                            width={20}
+                            height={20}
+                            className="rounded"
+                          />
+                        )}
+                        <span className="text-white text-sm font-medium">{sub.name}</span>
+                        <span className="text-gray-400 text-sm">£{sub.price.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

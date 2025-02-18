@@ -1,68 +1,74 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import useCheckAuth from '@/hooks/useCheckAuth';
 import { Subscription } from '@/types/subscription';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/utils/supabase';
 
 export default function Report() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const { isLoading, isTokenValid } = useCheckAuth();
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Only proceed with authentication check when loading is complete
-        if (!isLoading) {
-          // If not authenticated, redirect to signin
-          if (!isTokenValid) {
-            router.push('/signin');
-            return;
-          }
+    const loadSubscriptions = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
 
-          // If authenticated, load subscriptions
-          const storedData = localStorage.getItem('subscriptions');
-          if (!storedData) {
-            setSubscriptions([]);
-            return;
-          }
+        console.log('Raw data from Supabase:', data);
 
-          const loadedSubscriptions = JSON.parse(storedData, (key, value) => {
-            if (key === 'startDate' || key === 'canceledDate') {
-              return value ? new Date(value) : null;
-            }
-            return value;
+        if (data) {
+          const transformedData = data.map(sub => {
+            const price = Number(sub.price);
+            console.log('Price conversion:', sub.price, '->', price);
+            return {
+              id: sub.id,
+              name: sub.name,
+              price: price,
+              startDate: new Date(sub.start_date),
+              nextPaymentDate: new Date(sub.next_payment_date),
+              canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
+              category: sub.category,
+              logo: sub.logo
+            };
           });
-
-          setSubscriptions(loadedSubscriptions);
+          
+          console.log('Transformed data:', transformedData);
+          setSubscriptions(transformedData);
         }
-      } catch (err) {
-        setError('Failed to load subscription data');
-        console.error('Error loading data:', err);
+      } else {
+        const saved = localStorage.getItem('subscriptions');
+        if (saved) {
+          setSubscriptions(JSON.parse(saved));
+        }
       }
     };
 
-    loadData();
-  }, [isLoading, isTokenValid, router]);
+    loadSubscriptions();
+  }, [user]);
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-[#13131A] text-white flex items-center justify-center">
-        <div className="animate-pulse">Loading...</div>
+      <div className="min-h-screen bg-[#13131A] text-white p-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl mb-4">Please Sign In</h1>
+          <p>You need to be signed in to view the report.</p>
+          <button
+            onClick={() => router.push('/signin')}
+            className="mt-4 bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-4 py-2 rounded"
+          >
+            Sign In
+          </button>
+        </div>
       </div>
     );
   }
 
-  // If not authenticated and not loading, return null (will redirect in useEffect)
-  if (!isTokenValid) {
-    return null;
-  }
-
-  // Updated calculation function without future projections
   const calculateSubscriptionDetails = (subscription: Subscription) => {
     const today = new Date();
     const startDate = new Date(subscription.startDate);
@@ -80,26 +86,52 @@ export default function Report() {
   };
 
   const calculateOverallStats = () => {
-    const stats = subscriptions.reduce((acc, sub) => {
+    let totalSpentToDate = 0;
+    let totalMonthlyPayments = 0;
+    let activeSubscriptions = 0;
+
+    const startDates = subscriptions.map(sub => new Date(sub.startDate));
+    const earliestDate = new Date(Math.min(...startDates.map(date => date.getTime())));
+    const today = new Date();
+    
+    const totalMonths = Math.ceil((today.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+
+    subscriptions.forEach(sub => {
       const details = calculateSubscriptionDetails(sub);
-      return {
-        totalSpentToDate: acc.totalSpentToDate + details.totalSpentToDate,
-        activeSubscriptions: acc.activeSubscriptions + (sub.canceledDate ? 0 : 1),
-        totalMonthlyPayments: acc.totalMonthlyPayments + (sub.canceledDate ? 0 : sub.price)
-      };
-    }, {
-      totalSpentToDate: 0,
-      activeSubscriptions: 0,
-      totalMonthlyPayments: 0
+      totalSpentToDate += details.totalSpentToDate;
+      
+      if (!sub.canceledDate) {
+        totalMonthlyPayments += sub.price;
+        activeSubscriptions += 1;
+      }
     });
 
+
+    const categoryBreakdown = subscriptions.reduce((acc, sub) => {
+      const category = sub.category || 'Other';
+      if (!acc[category]) {
+        acc[category] = {
+          total: 0,
+          count: 0,
+          monthlySpend: 0
+        };
+      }
+      const details = calculateSubscriptionDetails(sub);
+      acc[category].total += details.totalSpentToDate;
+      acc[category].count += 1;
+      acc[category].monthlySpend += sub.canceledDate ? 0 : sub.price;
+      return acc;
+    }, {} as Record<string, { total: number; count: number; monthlySpend: number }>);
+
     return {
-      ...stats,
-      monthlyAverage: stats.totalSpentToDate / (subscriptions.length || 1)
+      totalSpentToDate,
+      activeSubscriptions,
+      totalMonthlyPayments,
+      categoryBreakdown,
+      monthlyAverage: totalSpentToDate / Math.max(totalMonths, 1)
     };
   };
 
-  // Main render
   return (
     <div className="min-h-screen bg-[#13131A] text-white p-8 print:bg-white print:text-black">
       <div className="max-w-4xl mx-auto">
@@ -122,26 +154,49 @@ export default function Report() {
           </div>
         </div>
 
-        {/* Overall Statistics */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Overall Statistics</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-[#1C1C24] p-4 rounded print:bg-gray-100">
               <p className="text-gray-400 print:text-gray-600">Total Spent to Date</p>
-              <p className="text-2xl font-bold">${calculateOverallStats().totalSpentToDate.toFixed(2)}</p>
+              <p className="text-2xl font-bold">£{calculateOverallStats().totalSpentToDate.toFixed(2)}</p>
             </div>
             <div className="bg-[#1C1C24] p-4 rounded print:bg-gray-100">
               <p className="text-gray-400 print:text-gray-600">Monthly Average Spent</p>
-              <p className="text-2xl font-bold">${calculateOverallStats().monthlyAverage.toFixed(2)}</p>
+              <p className="text-2xl font-bold">£{calculateOverallStats().monthlyAverage.toFixed(2)}</p>
             </div>
             <div className="bg-[#1C1C24] p-4 rounded print:bg-gray-100">
               <p className="text-gray-400 print:text-gray-600">Current Monthly Cost</p>
-              <p className="text-2xl font-bold">${calculateOverallStats().totalMonthlyPayments.toFixed(2)}</p>
+              <p className="text-2xl font-bold">£{calculateOverallStats().totalMonthlyPayments.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Subscription Details */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Category Analysis</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(calculateOverallStats().categoryBreakdown).map(([category, data]) => (
+              <div key={category} className="bg-[#1C1C24] p-4 rounded print:bg-gray-100">
+                <h3 className="text-lg font-semibold mb-2">{category}</h3>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-gray-400 print:text-gray-600">Monthly Spend</p>
+                    <p className="text-xl font-bold">£{data.monthlySpend.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 print:text-gray-600">Total Spent</p>
+                    <p className="text-xl font-bold">£{data.total.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 print:text-gray-600">Subscriptions</p>
+                    <p className="text-xl font-bold">{data.count}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Subscription Details</h2>
           {subscriptions.map((sub) => {
@@ -163,7 +218,7 @@ export default function Report() {
                   </div>
                   <div>
                     <p className="text-gray-400 print:text-gray-600">Monthly Payment</p>
-                    <p>${details.monthlyPayment.toFixed(2)}</p>
+                    <p>£{details.monthlyPayment.toFixed(2)}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 print:text-gray-600">Months Active</p>
@@ -171,7 +226,7 @@ export default function Report() {
                   </div>
                   <div>
                     <p className="text-gray-400 print:text-gray-600">Total Spent</p>
-                    <p>${details.totalSpentToDate.toFixed(2)}</p>
+                    <p>£{details.totalSpentToDate.toFixed(2)}</p>
                   </div>
                 </div>
                 {sub.canceledDate && (
@@ -184,7 +239,6 @@ export default function Report() {
           })}
         </div>
 
-        {/* Footer */}
         <div className="text-sm text-gray-400 print:text-gray-500 mt-8">
           <p>Report generated on: {format(new Date(), 'MMMM dd, yyyy')}</p>
         </div>

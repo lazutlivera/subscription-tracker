@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Inter } from 'next/font/google'
-import { NotificationProvider } from '@/contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Subscription Tracker",
-  description: "Track your monthly and yearly subscriptions",
+  title: "SubWise - Subscription Management",
+  description: "Track and manage all your subscriptions in one place",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -19,9 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <NotificationProvider>
+        <AuthProvider>
           {children}
-        </NotificationProvider>
+        </AuthProvider>
       </body>
     </html>
   );
