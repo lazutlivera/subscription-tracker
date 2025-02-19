@@ -72,22 +72,17 @@ export default function NotificationBell() {
     }
   }, [user]);
 
-  const markAsRead = async (notificationId: string) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!user) return;
 
-    const { error } = await supabase
+    await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('id', notificationId)
-      .eq('user_id', user.id);
+      .eq('id', notification.id);
 
-    if (!error) {
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-    }
+    setNotifications(prev => 
+      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+    );
   };
 
   const markAllAsRead = async () => {
@@ -146,7 +141,7 @@ export default function NotificationBell() {
                   className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 ${
                     !notification.read ? 'bg-gray-800/50' : ''
                   }`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <p className="text-white text-sm md:text-base">{notification.message}</p>
                   <p className="text-xs md:text-sm text-gray-400 mt-1">
