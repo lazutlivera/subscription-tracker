@@ -1,10 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Subscription } from '../types/subscription';
 
-const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+const Chart = dynamic(() => import('react-apexcharts'), { 
+  ssr: false,
+  loading: () => <div>Loading chart...</div>
+});
 
 interface ChartProps {
   subscriptions: Subscription[];
@@ -30,6 +33,24 @@ const chartColors = [
 ];
 
 export function SubscriptionChart({ subscriptions }: ChartProps) {
+  const [chartHeight, setChartHeight] = useState("320");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const updateHeight = () => {
+      setChartHeight(window.innerWidth < 768 ? "250" : "320");
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  if (!isMounted) {
+    return <div>Loading chart...</div>;
+  }
+
   // Move calculateCost function to the top
   const calculateCost = (sub: Subscription) => {
     const today = new Date();
@@ -150,7 +171,7 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
             series={series}
             type="donut"
             width="100%"
-            height={window.innerWidth < 768 ? "250" : "320"}
+            height={chartHeight}
           />
         </div>
         
