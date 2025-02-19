@@ -62,7 +62,6 @@ async function resetDatabase() {
       )
     `);
     
-    console.log('Database reset complete!');
   } catch (error) {
     console.error('Error resetting database:', error);
   }
@@ -77,7 +76,6 @@ async function seedUsers() {
         [user.name, user.email, user.password]
       );
     }
-    console.log('Users table seeded successfully!');
   } catch (error) {
     console.error('Error seeding users:', error);
   }
@@ -92,7 +90,6 @@ async function seedSubscriptions() {
         [subscription.user_id, subscription.service_name, subscription.price, subscription.billing_cycle]
       );
     }
-    console.log('Subscriptions table seeded successfully!');
   } catch (error) {
     console.error('Error seeding users:', error);
   }
