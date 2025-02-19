@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Subscription } from '../types/subscription';
 
@@ -8,6 +8,7 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface ChartProps {
   subscriptions: Subscription[];
+  currentDate: Date;
 }
 
 // Create a more diverse color palette
@@ -29,7 +30,21 @@ const chartColors = [
   '#43A047', // Forest
 ];
 
-export function SubscriptionChart({ subscriptions }: ChartProps) {
+export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
+  // Add state for width
+  const [chartHeight, setChartHeight] = useState("320");
+
+  // Handle window resize
+  useEffect(() => {
+    const updateHeight = () => {
+      setChartHeight(window.innerWidth < 768 ? "250" : "320");
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
   // Move calculateCost function to the top
   const calculateCost = (sub: Subscription) => {
     const today = new Date();
@@ -150,7 +165,7 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
             series={series}
             type="donut"
             width="100%"
-            height={window.innerWidth < 768 ? "250" : "320"}
+            height={chartHeight}
           />
         </div>
         

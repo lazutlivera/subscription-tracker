@@ -10,55 +10,70 @@ import NotificationBell from '@/components/NotificationBell';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/utils/supabase';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 import logo from '@/assets/brand/logo.png';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
   const router = useRouter();
 
+  // Load subscriptions when component mounts or auth state changes
   useEffect(() => {
     const loadSubscriptions = async () => {
-      if (user) {
-        const { data } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        if (data) {
-          const transformedData = data.map(sub => ({
-            id: sub.id,
-            name: sub.name,
-            price: Number(sub.price),
-            startDate: new Date(sub.start_date),
-            nextPaymentDate: new Date(sub.next_payment_date),
-            canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
-            category: sub.category,
-            logo: sub.logo
-          }));
-          setSubscriptions(transformedData);
+      try {
+        if (user) {
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id);
+          
+          if (error) {
+            console.error('Supabase error:', error);
+            return;
+          }
+          
+          if (data) {
+            // Transform data when loading
+            const transformedData = data.map(sub => ({
+              id: sub.id,
+              name: sub.name,
+              price: Number(sub.price),
+              startDate: new Date(sub.start_date),
+              nextPaymentDate: new Date(sub.next_payment_date),
+              canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
+              category: sub.category,
+              logo: sub.logo
+            }));
+            setSubscriptions(transformedData);
+          }
+        } else {
+          const saved = localStorage.getItem('subscriptions');
+          if (saved) {
+            setSubscriptions(JSON.parse(saved));
+          }
         }
-      } else {
-        const saved = localStorage.getItem('subscriptions');
-        if (saved) {
-          setSubscriptions(JSON.parse(saved));
-        }
+      } catch (error) {
+        console.error('Load subscriptions error:', error);
       }
     };
 
     loadSubscriptions();
   }, [user]);
 
+  // Save subscriptions whenever they change
   useEffect(() => {
     if (!user) {
+      // Only save to localStorage when not authenticated
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
 
+  // Add this effect to fetch user profile data
   useEffect(() => {
     async function getUserProfile() {
       if (user) {
@@ -75,16 +90,6 @@ export default function Home() {
     }
     getUserProfile();
   }, [user]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#13131A] text-white p-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl mb-4">Loading...</h1>
-        </div>
-      </div>
-    );
-  }
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
     if (user) {
@@ -301,7 +306,7 @@ export default function Home() {
             {user ? (
               <button 
                 className="text-sm md:text-base bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
-                onClick={() => router.push('/signout')}
+                onClick={signOut}
               >
                 Sign Out
               </button>
@@ -334,7 +339,7 @@ export default function Home() {
             <Calendar subscriptions={subscriptions} onDateClick={() => {}} />
           </div>
           <div className="h-[400px] md:h-[600px] mt-8 lg:mt-0">
-            <SubscriptionChart subscriptions={subscriptions} />
+            <SubscriptionChart subscriptions={subscriptions} currentDate={new Date()} />
           </div>
         </div>
       </div>

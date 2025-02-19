@@ -1,7 +1,6 @@
 // pages/api/users.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
-import { supabase } from '@/utils/supabase';
 
 // Create a connection pool for PostgreSQL
 const pool = new Pool({
@@ -34,14 +33,11 @@ export default async function handler(
     }
   } else if (req.method === 'GET') {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*');
-
-      if (error) throw error;
-      res.status(200).json(data);
-    } catch (err) {
-      res.status(500).json({ message: 'Error fetching users' });
+      const result = await pool.query('SELECT * FROM users');
+      const users: User[] = result.rows;
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching users' });
     }
   } else {
     res.setHeader('Allow', ['GET', 'POST']);

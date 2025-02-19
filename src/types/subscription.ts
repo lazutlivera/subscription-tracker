@@ -7,4 +7,5 @@ export interface Subscription {
   category: string;
   nextPaymentDate: Date;
   logo?: string | null;
+  billingCycle?: 'monthly' | 'yearly';
 }

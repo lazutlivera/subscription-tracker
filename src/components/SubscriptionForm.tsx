@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Subscription } from '../types/subscription';
 import { PlusIcon } from '@heroicons/react/24/solid';
+import SubscriptionList from './SubscriptionList';
 import { subscriptionCategories, defaultCategories, SubscriptionCategory } from '@/utils/categories';
 import { createPaymentDueNotification } from '@/utils/notifications';
 import { useAuth } from '@/contexts/AuthContext';
@@ -155,6 +156,13 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
 
     const nextPaymentDate = calculateNextPaymentDate(startDate);
 
+    console.log('FORM: Saving subscription with dates:', {
+      name: formData.name,
+      startDate: startDate.toISOString(),
+      nextPaymentDate: nextPaymentDate.toISOString(),
+      rawNextPayment: nextPaymentDate
+    });
+
     const subscription: Omit<Subscription, "id"> = {
       name: formData.name,
       price: Number(price),
@@ -211,6 +219,14 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     });
     setError(null);
     setIsError(false);
+  };
+
+  const handleCancelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setFormData(prev => ({
+      ...prev,
+      canceledDate: isChecked ? new Date().toISOString().split('T')[0] : null,
+    }));
   };
 
   return (

@@ -27,53 +27,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata.name || session.user.email!.split('@')[0]
-          });
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {  // Check for user in session
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata.name
+        });
+      } else {
         setUser(null);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    initializeAuth();
+      setIsLoading(false);
+    });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (event === 'SIGNED_IN' && session?.user) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email!,
-              name: session.user.user_metadata.name || session.user.email!.split('@')[0]
-            });
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null);
-          }
-        } catch (error) {
-          console.error('Auth state change error:', error);
-          setUser(null);
-        } finally {
-          setIsLoading(false);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata.name
+        });
+      } else {
+        setUser(null);
       }
-    );
+      setIsLoading(false);
+    });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
