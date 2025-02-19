@@ -19,12 +19,14 @@ export default function Home() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   
+
   const { user, isLoading, signOut } = useAuth();
+
   const router = useRouter();
 
-  // Load subscriptions when component mounts or auth state changes
   useEffect(() => {
     const loadSubscriptions = async () => {
+
       try {
         if (user) {
           const { data, error } = await supabase
@@ -56,6 +58,7 @@ export default function Home() {
           if (saved) {
             setSubscriptions(JSON.parse(saved));
           }
+
         }
       } catch (error) {
         console.error('Load subscriptions error:', error);
@@ -65,15 +68,12 @@ export default function Home() {
     loadSubscriptions();
   }, [user]);
 
-  // Save subscriptions whenever they change
   useEffect(() => {
     if (!user) {
-      // Only save to localStorage when not authenticated
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
 
-  // Add this effect to fetch user profile data
   useEffect(() => {
     async function getUserProfile() {
       if (user) {
@@ -90,6 +90,16 @@ export default function Home() {
     }
     getUserProfile();
   }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#13131A] text-white p-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl mb-4">Loading...</h1>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
     if (user) {
