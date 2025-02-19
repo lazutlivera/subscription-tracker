@@ -18,9 +18,10 @@ export default function Home() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
+  // Load subscriptions when component mounts or auth state changes
   useEffect(() => {
     const loadSubscriptions = async () => {
       if (user) {
@@ -30,10 +31,11 @@ export default function Home() {
           .eq('user_id', user.id);
         
         if (data) {
+          // Transform data when loading
           const transformedData = data.map(sub => ({
             id: sub.id,
             name: sub.name,
-            price: Number(sub.price),
+            price: Number(sub.price), // Ensure price is a number
             startDate: new Date(sub.start_date),
             nextPaymentDate: new Date(sub.next_payment_date),
             canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
@@ -53,12 +55,15 @@ export default function Home() {
     loadSubscriptions();
   }, [user]);
 
+  // Save subscriptions whenever they change
   useEffect(() => {
     if (!user) {
+      // Only save to localStorage when not authenticated
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
 
+  // Add this effect to fetch user profile data
   useEffect(() => {
     async function getUserProfile() {
       if (user) {
@@ -75,16 +80,6 @@ export default function Home() {
     }
     getUserProfile();
   }, [user]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#13131A] text-white p-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl mb-4">Loading...</h1>
-        </div>
-      </div>
-    );
-  }
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
     if (user) {
