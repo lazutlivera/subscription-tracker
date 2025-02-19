@@ -60,3 +60,13 @@ body {
   font-size: 2rem;
   font-weight: bold;
 }
+
+@media (max-width: 768px) {
+  .notification-container {
+    position: fixed !important;
+    top: 4rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto !important;
+  }
+}

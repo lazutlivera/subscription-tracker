@@ -133,21 +133,21 @@ export default function Report() {
   };
 
   return (
-    <div className="min-h-screen bg-[#13131A] text-white p-8 print:bg-white print:text-black">
+    <div className="min-h-screen bg-[#13131A] text-white p-4 md:p-8 print:bg-white print:text-black">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8 print:mb-4">
-          <h1 className="text-3xl font-bold">Subscription Report</h1>
-          <div className="space-x-4 print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 print:mb-4">
+          <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-0">Subscription Report</h1>
+          <div className="space-x-2 md:space-x-4 print:hidden">
             <button 
               onClick={() => router.push('/')}
-              className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-4 py-2 rounded transition-colors"
+              className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-sm md:text-base transition-colors"
             >
               Back to Dashboard
             </button>
             <button 
               onClick={() => window.print()} 
-              className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-4 py-2 rounded transition-colors"
+              className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-sm md:text-base transition-colors"
             >
               Print Report
             </button>

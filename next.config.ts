@@ -20,7 +20,16 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  }
+  },
+  async redirects() {
+    return [
+      {
+        source: '/signout',
+        destination: '/signin',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

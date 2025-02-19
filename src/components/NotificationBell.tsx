@@ -121,7 +121,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 md:w-80 w-screen -right-2 md:right-0 bg-[#1C1C24] rounded-lg shadow-lg z-50">
+        <div className="absolute top-full -right-2 mt-2 w-80 bg-[#1C1C24] rounded-lg shadow-lg z-50 notification-container">
           <div className="p-4 border-b border-gray-700">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-white">Notifications</h3>

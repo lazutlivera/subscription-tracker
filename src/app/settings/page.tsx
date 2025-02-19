@@ -98,13 +98,13 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-[#13131A] text-white p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Account Settings</h1>
+    <div className="min-h-screen bg-[#13131A] text-white p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-0">Account Settings</h1>
           <button
             onClick={() => router.push('/')}
-            className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-4 py-2 rounded"
+            className="bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white px-3 md:px-4 py-1.5 md:py-2 rounded text-sm md:text-base transition-colors"
           >
             Back to Dashboard
           </button>
@@ -118,7 +118,7 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="bg-[#1C1C24] rounded-lg p-6 mb-6">
+        <div className="bg-[#1C1C27] rounded-xl p-4 md:p-6">
           <h2 className="text-xl font-semibold mb-4">Account Information</h2>
           <div className="space-y-2 text-gray-400">
             <p>Email: {user?.email}</p>

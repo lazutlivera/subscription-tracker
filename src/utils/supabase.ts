@@ -4,7 +4,14 @@ import { Subscription } from '@/types/subscription';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'subswise-auth',
+    detectSessionInUrl: false,
+    flowType: 'pkce'
+  }
+});
 
 // Auth helper functions
 export const signInWithEmail = async (email: string, password: string) => {

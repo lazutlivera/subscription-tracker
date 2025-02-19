@@ -18,7 +18,7 @@ export default function Home() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
   // Load subscriptions when component mounts or auth state changes
@@ -259,10 +259,30 @@ export default function Home() {
                 <Cog6ToothIcon className="h-6 w-6" />
               </button>
             </div>
-            {user && (
-              <h2 className="text-white text-base md:text-lg font-medium">
-                Welcome, {userName || user.email?.split('@')[0]}
-              </h2>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <h2 className="text-white text-base font-medium">
+                  Welcome, {userName || user.email?.split('@')[0]}
+                </h2>
+                <button 
+                  className="md:hidden text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 transition-colors"
+                  onClick={signOut}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="text-white text-base font-medium md:block">
+                  Welcome, Guest
+                </h2>
+                <button 
+                  className="md:hidden text-sm bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 transition-colors"
+                  onClick={() => router.push('/signin')}
+                >
+                  Sign In
+                </button>
+              </div>
             )}
           </div>
           
@@ -280,29 +300,31 @@ export default function Home() {
             />
           </div>
 
-          <div className="flex gap-2 md:gap-4 items-center justify-end w-full md:w-auto md:flex-1">
-            <button 
-              className="text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
-              onClick={() => router.push('/report')}
-            >
-              View Report
-            </button>
-            <button 
-              className="text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
-              onClick={() => router.push('/analytics')}
-            >
-              View Trends
-            </button>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-center w-full md:w-auto md:flex-1 md:justify-end">
+            <div className="flex gap-2 w-full md:w-auto justify-center">
+              <button 
+                className="text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
+                onClick={() => router.push('/report')}
+              >
+                View Report
+              </button>
+              <button 
+                className="text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
+                onClick={() => router.push('/analytics')}
+              >
+                View Trends
+              </button>
+            </div>
             {user ? (
               <button 
-                className="text-sm md:text-base bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
-                onClick={() => router.push('/signout')}
+                className="hidden md:block text-sm md:text-base bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
+                onClick={signOut}
               >
                 Sign Out
               </button>
             ) : (
               <button 
-                className="text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
+                className="hidden md:block text-sm md:text-base bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
                 onClick={() => router.push('/signin')}
               >
                 Sign In
