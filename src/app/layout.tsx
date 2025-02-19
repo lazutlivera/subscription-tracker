@@ -6,7 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "SubWise - Subscription Management",
+  title: "SubsWise - Subscription Management",
   description: "Track and manage all your subscriptions in one place",
   icons: {
     icon: '/favicon.ico',
