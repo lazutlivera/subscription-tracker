@@ -10,16 +10,15 @@ import NotificationBell from '@/components/NotificationBell';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/utils/supabase';
-import Image from 'next/image';
-import logo from '@/assets/brand/logo.png';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import logo from '@/assets/brand/logo.png';
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   
-  const { user, isLoading, signOut } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   // Load subscriptions when component mounts or auth state changes
@@ -297,7 +296,7 @@ export default function Home() {
             {user ? (
               <button 
                 className="text-sm md:text-base bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
-                onClick={signOut}
+                onClick={() => router.push('/signout')}
               >
                 Sign Out
               </button>
@@ -330,7 +329,7 @@ export default function Home() {
             <Calendar subscriptions={subscriptions} onDateClick={() => {}} />
           </div>
           <div className="h-[400px] md:h-[600px] mt-8 lg:mt-0">
-            <SubscriptionChart subscriptions={subscriptions} currentDate={new Date()} />
+            <SubscriptionChart subscriptions={subscriptions} />
           </div>
         </div>
       </div>

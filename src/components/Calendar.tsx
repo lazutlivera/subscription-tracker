@@ -72,19 +72,6 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
-  const getRecurringDates = (subscription: Subscription) => {
-    const dates = [];
-    let currentDate = new Date(subscription.startDate);
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
-
-    while (currentDate <= endDate) {
-      dates.push(new Date(currentDate));
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-    return dates;
-  };
-
   return (
     <div className="bg-[#1C1C27] rounded-xl p-4 pb-8 md:p-8 h-fit max-h-[600px]">
       <div className="flex justify-between items-center mb-4 md:mb-6">

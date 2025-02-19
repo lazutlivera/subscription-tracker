@@ -8,7 +8,6 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface ChartProps {
   subscriptions: Subscription[];
-  currentDate: Date;
 }
 
 // Create a more diverse color palette
@@ -30,7 +29,7 @@ const chartColors = [
   '#43A047', // Forest
 ];
 
-export function SubscriptionChart({ subscriptions, currentDate }: ChartProps) {
+export function SubscriptionChart({ subscriptions }: ChartProps) {
   // Move calculateCost function to the top
   const calculateCost = (sub: Subscription) => {
     const today = new Date();
