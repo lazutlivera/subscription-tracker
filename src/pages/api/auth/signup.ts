@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
+import { supabase } from '@/utils/supabase';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -25,6 +26,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
         [name, email, hashedPassword]
       );
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (!data.user) {
+        return res.status(400).json({ message: 'Failed to create user' });
+      }
 
       res.status(201).json({ message: 'User created successfully', user: result.rows[0] });
     } catch (error) {

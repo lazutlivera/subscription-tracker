@@ -30,7 +30,6 @@ export async function initializeCommonSubscriptions() {
     .select('id');
 
   if (existing && existing.length > 0) {
-    console.log('Common subscriptions already initialized');
     return;
   }
 
