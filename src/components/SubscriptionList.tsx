@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 import { Subscription } from '../types/subscription';
 import { format } from 'date-fns';
 
