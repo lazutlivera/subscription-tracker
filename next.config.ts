@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NODE_ENV === 'production' 
+      ? 'https://your-netlify-domain.netlify.app/api'  // Replace with your actual Netlify domain
+      : 'http://localhost:3000/api'
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
