@@ -20,11 +20,6 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    // Add this to force client-side rendering for problematic components
-    appDir: true,
-    serverActions: true,
   }
 };
 
