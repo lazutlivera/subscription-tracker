@@ -155,7 +155,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
 
     const nextPaymentDate = calculateNextPaymentDate(startDate);
 
-    console.log('FORM: Saving subscription with dates:', {
+     ('FORM: Saving subscription with dates:', {
       name: formData.name,
       startDate: startDate.toISOString(),
       nextPaymentDate: nextPaymentDate.toISOString(),

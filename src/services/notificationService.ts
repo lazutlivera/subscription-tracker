@@ -47,7 +47,7 @@ export class NotificationService {
       })
     );
 
-    console.log('NOTIFICATION CHECK:', {
+     ('NOTIFICATION CHECK:', {
       name: subscription.name,
       paymentDates: paymentDates.map(d => d.toLocaleDateString()),
       nextPayment: nextPayment?.toLocaleDateString(),
@@ -56,7 +56,7 @@ export class NotificationService {
     });
 
     if (!subscription.canceledDate && nextPayment) {
-      console.log('✅ Creating notification');
+       ('✅ Creating notification');
       return {
         id: this.generateNotificationId(),
         message: `Payment of $${subscription.price} for ${subscription.name} is due on ${nextPayment.toLocaleDateString()}`,
@@ -66,7 +66,7 @@ export class NotificationService {
       };
     }
 
-    console.log('❌ No notification needed');
+     ('❌ No notification needed');
     return null;
   }
 
