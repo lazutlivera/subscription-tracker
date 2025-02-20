@@ -57,7 +57,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
         (currentDate.getFullYear() === subStartDate.getFullYear() && 
          currentDate.getMonth() >= subStartDate.getMonth());
 
-      // Check if before cancellation
+       
       const isBeforeCancel = !subCancelDate || currentMonthDate <= subCancelDate;
 
       return isDayMatch && isCurrentOrAfterStart && isBeforeCancel;

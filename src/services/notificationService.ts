@@ -18,15 +18,15 @@ export class NotificationService {
     const today = new Date();
     const threeDaysFromNow = addDays(today, 3);
 
-    // Get all recurring payment dates
+     
     const getRecurringPaymentDates = (sub: Subscription): Date[] => {
       const dates = [];
       let currentDate = new Date(sub.startDate);
-      const endDate = addDays(today, 7); // Look ahead 7 days
+      const endDate = addDays(today, 7);  
 
       while (currentDate <= endDate) {
         dates.push(new Date(currentDate));
-        // Create new date object for next month to avoid mutation
+         
         currentDate = new Date(
           currentDate.getFullYear(),
           currentDate.getMonth() + 1,
@@ -36,10 +36,10 @@ export class NotificationService {
       return dates;
     };
 
-    // Get all payment dates for this subscription
+     
     const paymentDates = getRecurringPaymentDates(subscription);
     
-    // Find the next payment date that's within our notification window
+     
     const nextPayment = paymentDates.find(date => 
       isWithinInterval(date, {
         start: today,

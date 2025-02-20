@@ -9,7 +9,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if we're on the signin page
+     
     const isAuthPage = window.location.pathname === '/signin';
     
     if (!isLoading && !user && !isAuthPage) {

@@ -26,9 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Get initial session
+     
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {  // Check for user in session
+      if (session?.user) {   
         setUser({
           id: session.user.id,
           email: session.user.email!,
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    // Listen for auth changes
+     
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { user, session } = await signInWithEmail(email, password);
     if (user) {
-      router.push('/');  // Only redirect after successful sign in
+      router.push('/');   
     }
   };
 
@@ -73,22 +73,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // First kill the session
+       
       await supabase.auth.signOut();
       
-      // Clear user state
+       
       setUser(null);
 
-      // Clear ALL localStorage
+       
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();
       }
 
-      // Force a complete page reload and navigation
+       
       window.location.href = '/signin';
       
-      // Add a small delay before reload to ensure everything is cleared
+       
       setTimeout(() => {
         window.location.reload();
       }, 100);

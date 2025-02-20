@@ -17,35 +17,35 @@ interface SubscriptionFormProps {
 }
 
 const generateInitialsLogo = (name: string): string => {
-  // Split the name into words and get initials
+   
   const initials = name
     .split(' ')
     .map(word => word[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2); // Only take first two initials
+    .slice(0, 2);  
 
-  // Create a canvas to generate the logo
+   
   const canvas = document.createElement('canvas');
   canvas.width = 100;
   canvas.height = 100;
   const ctx = canvas.getContext('2d');
   
   if (ctx) {
-    // Set background
+     
     ctx.fillStyle = '#6C5DD3';
     ctx.fillRect(0, 0, 100, 100);
     
-    // Set text properties
+     
     ctx.fillStyle = 'white';
     ctx.font = 'bold 40px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Draw initials
+     
     ctx.fillText(initials, 50, 50);
     
-    // Convert to data URL
+     
     return canvas.toDataURL('image/png');
   }
   
@@ -67,7 +67,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
   const [isError, setIsError] = useState(false);
   const { user } = useAuth();
 
-  // Initialize form with existing subscription data if provided
+   
   useEffect(() => {
     if (existingSubscription) {
       setFormData({
@@ -88,7 +88,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
+     
     if (!formData.name.trim()) {
       setError('Please select or enter a subscription name');
       setIsError(true);
@@ -101,7 +101,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       return;
     }
 
-    // Only check for duplicates if this is a new subscription
+     
     if (!existingSubscription) {
       const isDuplicate = subscriptions.some(
         sub => sub.name.toLowerCase() === formData.name.toLowerCase()
@@ -113,13 +113,13 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       }
     }
 
-    // Validate required fields for custom subscriptions
+     
     if (isCustom && (!formData.name || !formData.price)) {
       alert('Name and price are required for custom subscriptions');
       return;
     }
 
-    // Clear any existing errors
+     
     setError(null);
     setIsError(false);
 
@@ -130,17 +130,17 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     const startDate = new Date(formData.startDate);
     const today = new Date();
     
-    // Simplified next payment date calculation
+     
     const calculateNextPaymentDate = (baseDate: Date): Date => {
       const date = new Date(baseDate);
       const today = new Date();
       
-      // If the date is in the future, return it
+       
       if (date > today) {
         return date;
       }
       
-      // Calculate all possible payment dates until we find one in the future
+       
       let currentDate = new Date(date);
       while (currentDate <= today) {
         currentDate = new Date(
@@ -174,7 +174,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
 
     onSubmit(subscription);
 
-    // Create notification after subscription is saved
+     
     if (user) {
       const { data } = await supabase
         .from('subscriptions')
@@ -188,7 +188,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
       }
     }
 
-    // Reset form
+     
     setFormData({
       name: '',
       price: '',
@@ -206,7 +206,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     setFormData(prev => {
       const updates = { [name]: value };
       
-      // Auto-select category, price, and logo when subscription name changes
+       
       if (name === 'name' && !isCustom) {
         const selectedSub = subscriptionData.find(sub => sub.name === value);
         updates.category = defaultCategories[value] || 'Other';

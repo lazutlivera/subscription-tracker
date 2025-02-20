@@ -1,13 +1,13 @@
-// pages/api/users.ts
+ 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 
-// Create a connection pool for PostgreSQL
+ 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Type definitions for user data
+ 
 interface User {
   id: number;
   name: string;

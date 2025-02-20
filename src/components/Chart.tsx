@@ -13,7 +13,7 @@ interface ChartProps {
   subscriptions: Subscription[];
 }
 
-// Create a more diverse color palette
+ 
 const chartColors = [
   '#6C5DD3', // Purple (primary)
   '#FF8F6B', // Coral
@@ -51,25 +51,25 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     return <div>Loading chart...</div>;
   }
 
-  // Move calculateCost function to the top
+   
   const calculateCost = (sub: Subscription) => {
     const today = new Date();
     const startDate = new Date(sub.startDate);
     const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
 
-    // If cancelled before start
+     
     if (cancelDate && cancelDate < startDate) {
       return 0;
     }
 
-    // Calculate months including partial months
+     
     const endDate = cancelDate || today;
     
-    // Calculate the difference in months including partial months
+     
     let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
     months += endDate.getMonth() - startDate.getMonth();
     
-    // Add 1 to include both start and end months if we're past the start day in the end month
+     
     if (endDate.getDate() >= startDate.getDate()) {
       months += 1;
     }
@@ -77,15 +77,15 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     return sub.price * Math.max(0, months);
   };
 
-  // Update the totalCost calculation for monthly recurring cost
+   
   const totalCost = subscriptions.reduce((sum, sub) => {
     const today = new Date();
     const startDate = new Date(sub.startDate);
     const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
 
-    // Don't include in monthly cost if:
-    // 1. Subscription hasn't started yet
-    // 2. Subscription is cancelled
+     
+     
+     
     if (startDate > today || (cancelDate && cancelDate <= today)) {
       return sum;
     }
@@ -109,7 +109,7 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     theme: {
       mode: 'dark' as const,
     },
-    colors: chartColors, // Use our new color palette instead of the hardcoded one
+    colors: chartColors,  
     plotOptions: {
       pie: {
         donut: {
@@ -127,7 +127,7 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
       },
     },
     dataLabels: {
-      enabled: false, // Disabled for cleaner look
+      enabled: false,  
     },
     legend: {
       show: false,
@@ -144,28 +144,28 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
   };
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 min-h-[400px] md:min-h-[555px]">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8">
+    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 h-full flex flex-col overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
         <div>
-          <h2 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-4">Subscription Overview</h2>
-          <div className="flex gap-6 md:gap-12">
+          <h2 className="text-lg md:text-xl font-semibold text-white mb-2">Subscription Overview</h2>
+          <div className="flex gap-4 md:gap-12">
             <div>
-              <p className="text-3xl font-bold text-white">
+              <p className="text-xl md:text-3xl font-bold text-white">
                 £{totalCost.toFixed(2)}
-                <span className="text-sm text-gray-400 ml-2">/ month</span>
+                <span className="text-xs md:text-sm text-gray-400 ml-2">/ month</span>
               </p>
-              <p className="text-sm text-gray-400 mt-1">Total Monthly Cost</p>
+              <p className="text-xs md:text-sm text-gray-400 mt-1">Total Monthly Cost</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-white">£{spentAmount.toFixed(2)}</p>
-              <p className="text-sm text-gray-400 mt-1">Total Spent to Date</p>
+              <p className="text-xl md:text-3xl font-bold text-white">£{spentAmount.toFixed(2)}</p>
+              <p className="text-xs md:text-sm text-gray-400 mt-1">Total Spent to Date</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-1/2">
+      <div className="flex flex-col md:flex-row flex-1 overflow-y-auto">
+        <div className="w-full md:w-1/2 min-h-[250px] md:min-h-[400px] flex-shrink-0">
           <Chart
             options={options}
             series={series}
@@ -176,23 +176,42 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
         </div>
         
         <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-8">
-          {subscriptions.map((sub, index) => (
-            <div key={index} className="flex items-center justify-between py-2 border-b border-gray-800">
-              <div className="flex items-center gap-3">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: chartColors[index % chartColors.length] }}
-                />
-                <span className="text-white">{sub.name}</span>
+          <div className="h-[300px] md:h-[400px] overflow-y-auto 
+            scrollbar-thin 
+            scrollbar-thumb-[#6C5DD3] 
+            scrollbar-track-[#1C1C24]/40 
+            hover:scrollbar-thumb-[#5B4EC2]
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            [&::-webkit-scrollbar-thumb]:bg-gradient-to-b
+            [&::-webkit-scrollbar-thumb]:from-[#6C5DD3]
+            [&::-webkit-scrollbar-thumb]:to-[#5B4EC2]
+            [&::-webkit-scrollbar-thumb]:border
+            [&::-webkit-scrollbar-thumb]:border-[#1C1C24]
+            [&::-webkit-scrollbar-track]:rounded-full
+            [&::-webkit-scrollbar-track]:bg-[#1C1C24]/40
+            hover:[&::-webkit-scrollbar-thumb]:from-[#5B4EC2]
+            hover:[&::-webkit-scrollbar-thumb]:to-[#4B3EC2]
+            transition-colors
+            duration-150">
+            {subscriptions.map((sub, index) => (
+              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-b-0">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: chartColors[index % chartColors.length] }}
+                  />
+                  <span className="text-white text-sm md:text-base">{sub.name}</span>
+                </div>
+                <div className="text-gray-400 text-sm md:text-base">
+                  £{sub.price.toFixed(2)}
+                  <span className="text-xs md:text-sm ml-2">
+                    ({((sub.price / totalCost) * 100).toFixed(1)}%)
+                  </span>
+                </div>
               </div>
-              <div className="text-gray-400">
-                £{sub.price.toFixed(2)}
-                <span className="text-sm ml-2">
-                  ({((sub.price / totalCost) * 100).toFixed(1)}%)
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

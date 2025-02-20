@@ -5,7 +5,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Seed data for users and posts
+ 
 const users = [
   { name: 'Dogan', email: 'lazutlivera@gmail.com', password: "kindred" },
   { name: 'Mustafa', email: 'demirci.mustafataha@gmail.com', password: "kindred" },
@@ -29,7 +29,7 @@ const subscriptions = [
   },
 ];
 
-// Drop and recreate tables
+ 
 async function resetDatabase() {
   try {
 
@@ -37,7 +37,7 @@ async function resetDatabase() {
     await pool.query('DROP TABLE IF EXISTS users');
     
 
-    // Recreate users table
+     
     await pool.query(`
       CREATE TABLE users (
         id SERIAL PRIMARY KEY,
@@ -49,7 +49,7 @@ async function resetDatabase() {
       )
     `);
 
-     // Recreate subscriptions table
+      
      await pool.query(`
       CREATE TABLE subscriptions (
         id SERIAL PRIMARY KEY, 
@@ -68,7 +68,7 @@ async function resetDatabase() {
   }
 }
 
-// Seed users
+ 
 async function seedUsers() {
   try {
     for (const user of users) {
@@ -83,7 +83,7 @@ async function seedUsers() {
   }
 }
 
-// Seed subscriptions
+ 
 async function seedSubscriptions() {
   try {
     for (const subscription of subscriptions) {
@@ -98,18 +98,18 @@ async function seedSubscriptions() {
   }
 }
 
-// Main seed function
+ 
 async function seed() {
   try {
-    await resetDatabase(); // Reset the database first
-    await seedUsers();     // Seed users first
-    await seedSubscriptions(); //Seed subscriptions
+    await resetDatabase();  
+    await seedUsers();      
+    await seedSubscriptions();  
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {
-    pool.end();  // Close the database connection
+    pool.end();   
   }
 }
 
-// Run the seed function
+ 
 seed();

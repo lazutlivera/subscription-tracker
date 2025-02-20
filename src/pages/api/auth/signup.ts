@@ -11,16 +11,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { name, email, password } = req.body;
 
     try {
-      // Check if the user already exists
+       
       const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       if (userExists.rows.length > 0) {
         return res.status(409).json({ error: 'User already exists' });
       }
 
-      // Hash the password
+       
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Insert new user
+       
       const result = await pool.query(
         'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
         [name, email, hashedPassword]

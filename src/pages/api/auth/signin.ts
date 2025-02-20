@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { email, password } = req.body;
 
   try {
-    // Find user by email
+     
     const result = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
@@ -27,14 +27,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Compare password
+     
     const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+     
     const token = jwt.sign(
       { 
         id: user.id,
@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       { expiresIn: '24h' }
     );
 
-    // Return user data and token
+     
     return res.status(200).json({
       token,
       user: {

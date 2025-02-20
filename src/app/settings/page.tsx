@@ -27,7 +27,7 @@ export default function Settings() {
       return;
     }
 
-    // Load user profile data
+     
     const loadProfile = async () => {
       const { data } = await supabase
         .from('profiles')
@@ -39,7 +39,7 @@ export default function Settings() {
         setFormData(prev => ({ ...prev, fullName: data.full_name }));
       }
 
-      // Get user metadata
+       
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         setUserMetadata({
@@ -57,7 +57,7 @@ export default function Settings() {
     setMessage(null);
 
     try {
-      // Update name
+       
       if (formData.fullName) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -67,7 +67,7 @@ export default function Settings() {
         if (profileError) throw profileError;
       }
 
-      // Update password
+       
       if (formData.newPassword) {
         if (formData.newPassword !== formData.confirmPassword) {
           setMessage({ text: 'Passwords do not match', type: 'error' });

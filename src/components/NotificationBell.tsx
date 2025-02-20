@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BellIcon } from '@heroicons/react/24/outline';
+import { BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/utils/supabase';
+import { createPaymentDueNotification } from '@/utils/notifications';
 
 interface Notification {
   id: string;
@@ -35,39 +36,51 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (user) {
-      // Load notifications
+      let mounted = true;
+
       const loadNotifications = async () => {
-        const { data } = await supabase
+        const { data: notifications } = await supabase
           .from('notifications')
           .select('*')
           .eq('user_id', user.id)
+          .eq('deleted', false)
           .order('created_at', { ascending: false });
         
-        if (data) {
-          setNotifications(data);
+        if (mounted && notifications) {
+          setNotifications(notifications);
         }
       };
 
-      loadNotifications();
+      const checkForNewNotifications = async () => {
+        const { data: subscriptions } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
 
-      // Subscribe to new notifications
-      const subscription = supabase
-        .channel('notifications')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          }, 
-          payload => {
-            loadNotifications();
+        if (subscriptions && mounted) {
+          for (const sub of subscriptions) {
+            await createPaymentDueNotification({
+              ...sub,
+              startDate: new Date(sub.start_date),
+              nextPaymentDate: new Date(sub.next_payment_date),
+              canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
+            }, user.id);
           }
-        )
-        .subscribe();
+           
+          loadNotifications();
+        }
+      };
+
+       
+      loadNotifications();
+      checkForNewNotifications();
+
+       
+      const interval = setInterval(checkForNewNotifications, 3600000);
 
       return () => {
-        subscription.unsubscribe();
+        mounted = false;
+        clearInterval(interval);
       };
     }
   }, [user]);
@@ -78,14 +91,11 @@ export default function NotificationBell() {
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('id', notificationId)
-      .eq('user_id', user.id);
+      .match({ id: notificationId, user_id: user.id });
 
     if (!error) {
       setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
     }
   };
@@ -96,13 +106,26 @@ export default function NotificationBell() {
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('user_id', user.id)
-      .eq('read', false);
+      .match({ user_id: user.id, read: false });
 
     if (!error) {
       setNotifications(prev => 
         prev.map(n => ({ ...n, read: true }))
       );
+    }
+  };
+
+  const handleClearNotification = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ deleted: true })
+      .match({ id: notificationId, user_id: user.id });
+
+    if (!error) {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
     }
   };
 
@@ -136,19 +159,42 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          <div className="max-h-[calc(4*88px)] md:max-h-[calc(4*88px)] max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="max-h-[calc(4*88px)] md:max-h-[calc(4*88px)] overflow-y-auto 
+            scrollbar-thin 
+            scrollbar-thumb-[#6C5DD3] 
+            scrollbar-track-[#1C1C24]/40 
+            hover:scrollbar-thumb-[#5B4EC2]
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            [&::-webkit-scrollbar-thumb]:bg-gradient-to-b
+            [&::-webkit-scrollbar-thumb]:from-[#6C5DD3]
+            [&::-webkit-scrollbar-thumb]:to-[#5B4EC2]
+            [&::-webkit-scrollbar-thumb]:border
+            [&::-webkit-scrollbar-thumb]:border-[#1C1C24]
+            [&::-webkit-scrollbar-track]:rounded-full
+            [&::-webkit-scrollbar-track]:bg-[#1C1C24]/40
+            hover:[&::-webkit-scrollbar-thumb]:from-[#5B4EC2]
+            hover:[&::-webkit-scrollbar-thumb]:to-[#4B3EC2]
+            transition-colors
+            duration-150">
             {notifications.length === 0 ? (
               <p className="p-4 text-gray-400 text-center">No notifications</p>
             ) : (
               notifications.map(notification => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 ${
+                  className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 relative group ${
                     !notification.read ? 'bg-gray-800/50' : ''
                   }`}
                   onClick={() => markAsRead(notification.id)}
                 >
-                  <p className="text-white text-sm md:text-base">{notification.message}</p>
+                  <button
+                    onClick={(e) => handleClearNotification(e, notification.id)}
+                    className="absolute right-2 top-2 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                  <p className="text-white text-sm md:text-base pr-6">{notification.message}</p>
                   <p className="text-xs md:text-sm text-gray-400 mt-1">
                     {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                   </p>

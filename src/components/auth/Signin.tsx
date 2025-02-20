@@ -18,7 +18,7 @@ export default function SignIn() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for verification message in URL
+     
     const urlMessage = searchParams?.get('message');
     if (urlMessage) {
       setMessage(urlMessage);

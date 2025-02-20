@@ -134,7 +134,7 @@ export default function Report() {
 
   return (
     <div className="min-h-screen bg-[#13131A] text-white p-4 md:p-8 print:bg-white print:text-black">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-8 print:mb-4">
           <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-0">Subscription Report</h1>

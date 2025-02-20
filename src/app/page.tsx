@@ -21,7 +21,7 @@ export default function Home() {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  // Load subscriptions when component mounts or auth state changes
+   
   useEffect(() => {
     const loadSubscriptions = async () => {
       if (user) {
@@ -31,11 +31,11 @@ export default function Home() {
           .eq('user_id', user.id);
         
         if (data) {
-          // Transform data when loading
+           
           const transformedData = data.map(sub => ({
             id: sub.id,
             name: sub.name,
-            price: Number(sub.price), // Ensure price is a number
+            price: Number(sub.price),  
             startDate: new Date(sub.start_date),
             nextPaymentDate: new Date(sub.next_payment_date),
             canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
@@ -55,15 +55,15 @@ export default function Home() {
     loadSubscriptions();
   }, [user]);
 
-  // Save subscriptions whenever they change
+   
   useEffect(() => {
     if (!user) {
-      // Only save to localStorage when not authenticated
+       
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
 
-  // Add this effect to fetch user profile data
+   
   useEffect(() => {
     async function getUserProfile() {
       if (user) {
@@ -83,7 +83,7 @@ export default function Home() {
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
     if (user) {
-      // Format the data to match database columns exactly
+       
       const dbSubscription = {
         user_id: user.id,
         name: newSubscription.name,
@@ -96,7 +96,7 @@ export default function Home() {
       };
 
       if (editingSubscription) {
-        // Update existing subscription
+         
         const { data, error } = await supabase
           .from('subscriptions')
           .update(dbSubscription)
@@ -124,7 +124,7 @@ export default function Home() {
           ));
         }
       } else {
-        // Insert new subscription
+         
         const { data, error } = await supabase
           .from('subscriptions')
           .insert([dbSubscription])
@@ -150,14 +150,14 @@ export default function Home() {
         }
       }
     } else {
-      // Local storage logic
+       
       if (editingSubscription) {
-        // Update existing subscription
+         
         setSubscriptions(prev => prev.map(sub =>
           sub.id === editingSubscription.id ? { ...newSubscription, id: sub.id } : sub
         ));
       } else {
-        // Add new subscription
+         
         const subscriptionWithId = {
           ...newSubscription,
           id: Date.now().toString(),
@@ -175,7 +175,7 @@ export default function Home() {
 
   const handleDelete = async (subscriptionId: string) => {
     if (user) {
-      // Delete from Supabase
+       
       const { error } = await supabase
         .from('subscriptions')
         .delete()
@@ -187,10 +187,10 @@ export default function Home() {
       }
     }
     
-    // Update local state
+     
     setSubscriptions(prev => prev.filter(sub => sub.id !== subscriptionId));
     
-    // Update localStorage only if not authenticated
+     
     if (!user) {
       const updatedSubscriptions = subscriptions.filter(sub => sub.id !== subscriptionId);
       localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
@@ -199,7 +199,7 @@ export default function Home() {
 
   const handleDeleteAll = async () => {
     if (user) {
-      // Delete all user's subscriptions from Supabase
+       
       const { error } = await supabase
         .from('subscriptions')
         .delete()
@@ -213,7 +213,7 @@ export default function Home() {
     
     setSubscriptions([]);
     
-    // Update localStorage only if not authenticated
+     
     if (!user) {
       localStorage.setItem('subscriptions', JSON.stringify([]));
     }
@@ -221,7 +221,7 @@ export default function Home() {
 
   const handleCancel = async (subscription: Subscription) => {
     if (user) {
-      // Update in Supabase
+       
       const { error } = await supabase
         .from('subscriptions')
         .update({
@@ -236,7 +236,7 @@ export default function Home() {
       }
     }
     
-    // Update local state
+     
     const updatedSubscriptions = subscriptions.map(sub =>
       sub.id === subscription.id
         ? { ...sub, canceledDate: new Date() }

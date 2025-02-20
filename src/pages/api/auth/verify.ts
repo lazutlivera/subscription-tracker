@@ -21,14 +21,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const token = authHeader.split(' ')[1];
     const secret = process.env.JWT_SECRET || 'fallback-secret';
     
-    // Verify and decode token
+     
     const decoded = jwt.verify(token, secret) as {
       id: string;
       email: string;
       name: string;
     };
 
-    // Optional: Check if user still exists in database
+     
     const result = await pool.query(
       'SELECT id, email, name FROM users WHERE id = $1',
       [decoded.id]

@@ -13,7 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 });
 
-// Auth helper functions
+ 
 export const signInWithEmail = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -24,7 +24,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 };
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
-  // First sign up the user
+   
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -36,7 +36,7 @@ export const signUpWithEmail = async (email: string, password: string, name: str
   });
   if (error) throw error;
 
-  // Then create their profile
+   
   if (data.user) {
     const { error: profileError } = await supabase
       .from('profiles')
@@ -57,7 +57,7 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
-// Database helper functions for subscriptions
+ 
 export const getSubscriptions = async (userId: string) => {
   const { data, error } = await supabase
     .from('subscriptions')
