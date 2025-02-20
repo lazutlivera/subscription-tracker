@@ -175,21 +175,42 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
 
         
               {hasSubscriptions && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                <div 
+                  className="absolute bottom-full mb-2 hidden group-hover:block z-50"
+                  style={{
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    ...((index + firstDayOfMonth) % 7 <= 1 && { 
+                      left: '0', 
+                      transform: 'none',
+                      right: 'auto' 
+                    }),
+                    ...((index + firstDayOfMonth) % 7 >= 5 && { 
+                      left: 'auto', 
+                      right: '0',
+                      transform: 'none' 
+                    })
+                  }}
+                >
                   <div className="bg-[#23232D] rounded-lg shadow-xl p-2 whitespace-nowrap border border-gray-700">
                     {subscriptionsForDay.map((sub, idx) => (
-                      <div key={idx} className="flex items-center gap-3 py-1.5 px-1 hover:bg-gray-800 rounded">
-                        {sub.logo && (
-                          <Image
-                            src={sub.logo}
-                            alt={sub.name}
-                            width={20}
-                            height={20}
-                            className="rounded"
-                          />
-                        )}
-                        <span className="text-white text-sm font-medium">{sub.name}</span>
-                        <span className="text-gray-400 text-sm">£{sub.price.toFixed(2)}</span>
+                      <div 
+                        key={idx} 
+                        className="flex items-center justify-between gap-3 py-1.5 px-1 hover:bg-gray-800 rounded min-w-[200px]"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {sub.logo && (
+                            <Image
+                              src={sub.logo}
+                              alt={sub.name}
+                              width={20}
+                              height={20}
+                              className="rounded flex-shrink-0"
+                            />
+                          )}
+                          <span className="text-white text-sm font-medium truncate">{sub.name}</span>
+                        </div>
+                        <span className="text-gray-400 text-sm flex-shrink-0">£{sub.price.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

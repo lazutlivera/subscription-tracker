@@ -20,12 +20,12 @@ export default function Report() {
           .select('*')
           .eq('user_id', user.id);
 
-         ('Raw data from Supabase:', data);
+         (data);
 
         if (data) {
           const transformedData = data.map(sub => {
             const price = Number(sub.price);
-             ('Price conversion:', sub.price, '->', price);
+             (sub.price, '->', price);
             return {
               id: sub.id,
               name: sub.name,
@@ -38,7 +38,7 @@ export default function Report() {
             };
           });
           
-           ('Transformed data:', transformedData);
+           (transformedData);
           setSubscriptions(transformedData);
         }
       } else {

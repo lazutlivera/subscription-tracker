@@ -67,7 +67,10 @@ export default function SubscriptionList({
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => onEdit(subscription)}
+                    onClick={() => {
+                      window.scrollTo(0, 0);
+                      onEdit(subscription);
+                    }}
                     className="text-gray-400 hover:text-white transition-colors p-1"
                   >
                     <PencilIcon className="h-4 w-4 md:h-5 md:w-5" />

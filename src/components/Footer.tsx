@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="bg-[#13131A] py-2 px-4 border-t border-gray-800 w-full">
       <div className="flex items-center justify-between text-[10px] md:text-sm text-gray-400">
         <div>
-          <span>SubsWise v1.2</span>
+          <span>SubsWise v1.3</span>
           <span className="mx-1 md:mx-2">•</span>
           <span>© 2024 All rights reserved</span>
         </div>
