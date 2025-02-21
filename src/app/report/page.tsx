@@ -20,12 +20,9 @@ export default function Report() {
           .select('*')
           .eq('user_id', user.id);
 
-         (data);
-
         if (data) {
           const transformedData = data.map(sub => {
             const price = Number(sub.price);
-             (sub.price, '->', price);
             return {
               id: sub.id,
               name: sub.name,
@@ -37,15 +34,10 @@ export default function Report() {
               logo: sub.logo
             };
           });
-          
-           (transformedData);
           setSubscriptions(transformedData);
         }
       } else {
-        const saved = localStorage.getItem('subscriptions');
-        if (saved) {
-          setSubscriptions(JSON.parse(saved));
-        }
+        setSubscriptions([]); // Clear subscriptions when not signed in
       }
     };
 

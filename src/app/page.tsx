@@ -31,11 +31,10 @@ export default function Home() {
           .eq('user_id', user.id);
         
         if (data) {
-           
           const transformedData = data.map(sub => ({
             id: sub.id,
             name: sub.name,
-            price: Number(sub.price),  
+            price: Number(sub.price),
             startDate: new Date(sub.start_date),
             nextPaymentDate: new Date(sub.next_payment_date),
             canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
@@ -45,23 +44,12 @@ export default function Home() {
           setSubscriptions(transformedData);
         }
       } else {
-        const saved = localStorage.getItem('subscriptions');
-        if (saved) {
-          setSubscriptions(JSON.parse(saved));
-        }
+        setSubscriptions([]);
       }
     };
 
     loadSubscriptions();
   }, [user]);
-
-   
-  useEffect(() => {
-    if (!user) {
-       
-      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
-    }
-  }, [subscriptions, user]);
 
    
   useEffect(() => {
@@ -82,62 +70,35 @@ export default function Home() {
   }, [user]);
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
-    if (user) {
-       
-      const dbSubscription = {
-        user_id: user.id,
-        name: newSubscription.name,
-        price: Number(newSubscription.price),
-        start_date: new Date(newSubscription.startDate).toISOString(),
-        next_payment_date: new Date(newSubscription.nextPaymentDate).toISOString(),
-        canceled_date: newSubscription.canceledDate ? new Date(newSubscription.canceledDate).toISOString() : null,
-        category: newSubscription.category || 'default',
-        logo: newSubscription.logo || null
-      };
+    if (!user) return;
 
-      if (editingSubscription) {
-         
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .update(dbSubscription)
-          .eq('id', editingSubscription.id)
-          .select()
-          .single();
+    const dbSubscription = {
+      user_id: user.id,
+      name: newSubscription.name,
+      price: Number(newSubscription.price),
+      start_date: new Date(newSubscription.startDate).toISOString(),
+      next_payment_date: new Date(newSubscription.nextPaymentDate).toISOString(),
+      canceled_date: newSubscription.canceledDate ? new Date(newSubscription.canceledDate).toISOString() : null,
+      category: newSubscription.category || 'default',
+      logo: newSubscription.logo || null
+    };
 
-        if (error) {
-          console.error('Supabase error:', error);
-          return;
-        }
+    if (editingSubscription) {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update(dbSubscription)
+        .eq('id', editingSubscription.id)
+        .select()
+        .single();
 
-        if (data) {
-          setSubscriptions(prev => prev.map(sub => 
-            sub.id === editingSubscription.id ? {
-              id: data.id,
-              name: data.name,
-              price: Number(data.price),
-              startDate: new Date(data.start_date),
-              nextPaymentDate: new Date(data.next_payment_date),
-              canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
-              category: data.category,
-              logo: data.logo
-            } : sub
-          ));
-        }
-      } else {
-         
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .insert([dbSubscription])
-          .select()
-          .single();
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
+      }
 
-        if (error) {
-          console.error('Supabase error:', error);
-          return;
-        }
-
-        if (data) {
-          setSubscriptions(prev => [...prev, {
+      if (data) {
+        setSubscriptions(prev => prev.map(sub => 
+          sub.id === editingSubscription.id ? {
             id: data.id,
             name: data.name,
             price: Number(data.price),
@@ -146,25 +107,33 @@ export default function Home() {
             canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
             category: data.category,
             logo: data.logo
-          }]);
-        }
+          } : sub
+        ));
       }
     } else {
-       
-      if (editingSubscription) {
-         
-        setSubscriptions(prev => prev.map(sub =>
-          sub.id === editingSubscription.id ? { ...newSubscription, id: sub.id } : sub
-        ));
-      } else {
-         
-        const subscriptionWithId = {
-          ...newSubscription,
-          id: Date.now().toString(),
-        };
-        setSubscriptions(prev => [...prev, subscriptionWithId]);
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert([dbSubscription])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
       }
-      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+
+      if (data) {
+        setSubscriptions(prev => [...prev, {
+          id: data.id,
+          name: data.name,
+          price: Number(data.price),
+          startDate: new Date(data.start_date),
+          nextPaymentDate: new Date(data.next_payment_date),
+          canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
+          category: data.category,
+          logo: data.logo
+        }]);
+      }
     }
     setEditingSubscription(null);
   };
@@ -174,49 +143,35 @@ export default function Home() {
   };
 
   const handleDelete = async (subscriptionId: string) => {
-    if (user) {
-       
-      const { error } = await supabase
-        .from('subscriptions')
-        .delete()
-        .eq('id', subscriptionId);
+    if (!user) return;
 
-      if (error) {
-        console.error('Error deleting subscription:', error);
-        return;
-      }
+    const { error } = await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('id', subscriptionId);
+
+    if (error) {
+      console.error('Error deleting subscription:', error);
+      return;
     }
     
-     
     setSubscriptions(prev => prev.filter(sub => sub.id !== subscriptionId));
-    
-     
-    if (!user) {
-      const updatedSubscriptions = subscriptions.filter(sub => sub.id !== subscriptionId);
-      localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
-    }
   };
 
   const handleDeleteAll = async () => {
-    if (user) {
-       
-      const { error } = await supabase
-        .from('subscriptions')
-        .delete()
-        .eq('user_id', user.id);
+    if (!user) return;
 
-      if (error) {
-        console.error('Error deleting all subscriptions:', error);
-        return;
-      }
+    const { error } = await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting all subscriptions:', error);
+      return;
     }
     
     setSubscriptions([]);
-    
-     
-    if (!user) {
-      localStorage.setItem('subscriptions', JSON.stringify([]));
-    }
   };
 
   const handleCancel = async (subscription: Subscription) => {
