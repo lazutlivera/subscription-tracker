@@ -26,38 +26,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-     
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {   
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata.name
-        });
-      } else {
-        setUser(null);
-      }
+      setUser(session?.user ?? null);
       setIsLoading(false);
     });
 
-     
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata.name
-        });
-      } else {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user ?? null);
+        // Clear any existing sessions in localStorage
+        localStorage.removeItem('supabase.auth.token');
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        router.push('/signin');
+      } else if (event === 'TOKEN_REFRESHED') {
+        setUser(session?.user ?? null);
       }
-      setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Listen for storage events (other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'supabase.auth.token') {
+        // If token changed in another tab, sign out in this tab
+        if (user) {
+          supabase.auth.signOut();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [router, user]);
 
   const signIn = async (email: string, password: string) => {
     const { user, session } = await signInWithEmail(email, password);
