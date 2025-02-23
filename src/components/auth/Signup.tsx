@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { validatePassword } from '@/utils/validation';
+import { supabase } from '@/utils/supabase';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -21,24 +22,51 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setIsSubmitting(false);
       return;
     }
 
     const { isValid, error } = validatePassword(formData.password);
     if (!isValid) {
       setError(error);
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      setIsSubmitting(true);
-      await signUp(formData.name, formData.email, formData.password);
+      // Sign up with both auth and profile data
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name // Add name to user metadata
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+
+      // No need for separate profile creation
       router.push('/signin?message=Please check your email to verify your account');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create account');
+
+      // When creating profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id,
+            full_name: formData.name  // Save as full_name
+          }
+        ]);
+
+      if (profileError) throw profileError;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create account');
     } finally {
       setIsSubmitting(false);
     }

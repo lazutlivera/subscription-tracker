@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Add array of protected routes that require authentication
@@ -10,22 +10,23 @@ const PROTECTED_ROUTES = ['/report', '/settings', '/analytics'];
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const isAuthPage = window.location.pathname === '/signin';
-    const isProtectedRoute = PROTECTED_ROUTES.some(route => 
-      window.location.pathname.startsWith(route)
-    );
+    const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route));
+    const isAuthPage = pathname === '/signin';
 
-    // Only redirect if:
-    // 1. Not on auth page
-    // 2. Not loading
-    // 3. No user
-    // 4. On a protected route
-    if (!isLoading && !user && !isAuthPage && isProtectedRoute) {
-      router.push('/signin');
+    if (!isLoading && !user && isProtectedRoute) {
+      // Prevent the protected page from mounting at all
+      router.replace('/signin');
+      return;
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, pathname]);
+
+  // Don't render protected routes content during the auth check
+  if (PROTECTED_ROUTES.some(route => pathname?.startsWith(route)) && (isLoading || !user)) {
+    return null;
+  }
 
   return <>{children}</>;
 } 

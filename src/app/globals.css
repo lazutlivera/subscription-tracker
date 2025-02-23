@@ -61,6 +61,12 @@ body {
   font-weight: bold;
 }
 
+/* Remove the fixed desktop styles we just added */
+.notification-container {
+  z-index: 50 !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+
 @media (max-width: 768px) {
   .notification-container {
     position: fixed !important;
