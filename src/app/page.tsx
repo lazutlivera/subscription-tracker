@@ -44,61 +44,108 @@ export default function Home() {
           setSubscriptions(transformedData);
         }
       } else {
-        setSubscriptions([]);
+        // Restore localStorage for guest mode
+        const saved = localStorage.getItem('subscriptions');
+        if (saved) {
+          setSubscriptions(JSON.parse(saved));
+        }
       }
     };
 
     loadSubscriptions();
   }, [user]);
 
+  // Save to localStorage when subscriptions change in guest mode
+  useEffect(() => {
+    if (!user) {
+      localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+    }
+  }, [subscriptions, user]);
+
    
   useEffect(() => {
     async function getUserProfile() {
       if (user) {
-        const { data } = await supabase
+        // First try to get from profiles table
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('full_name')
           .eq('id', user.id)
           .single();
+
+        // Then try to get from user metadata
+        const { data: { user: userData } } = await supabase.auth.getUser();
         
-        if (data?.full_name) {
-          setUserName(data.full_name);
+        if (profileData?.full_name) {
+          setUserName(profileData.full_name);
+        } else if (userData?.user_metadata?.full_name) {
+          setUserName(userData.user_metadata.full_name);
+        } else {
+          setUserName(user.email?.split('@')[0] || 'Guest');
         }
+
+        console.log('Profile Data:', profileData);  // Debug
+        console.log('User Metadata:', userData);    // Debug
       }
     }
     getUserProfile();
   }, [user]);
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
-    if (!user) return;
+    if (user) {
+      // Handle authenticated user submission
+      const dbSubscription = {
+        user_id: user.id,
+        name: newSubscription.name,
+        price: Number(newSubscription.price),
+        start_date: new Date(newSubscription.startDate).toISOString(),
+        next_payment_date: new Date(newSubscription.nextPaymentDate).toISOString(),
+        canceled_date: newSubscription.canceledDate ? new Date(newSubscription.canceledDate).toISOString() : null,
+        category: newSubscription.category || 'default',
+        logo: newSubscription.logo || null
+      };
 
-    const dbSubscription = {
-      user_id: user.id,
-      name: newSubscription.name,
-      price: Number(newSubscription.price),
-      start_date: new Date(newSubscription.startDate).toISOString(),
-      next_payment_date: new Date(newSubscription.nextPaymentDate).toISOString(),
-      canceled_date: newSubscription.canceledDate ? new Date(newSubscription.canceledDate).toISOString() : null,
-      category: newSubscription.category || 'default',
-      logo: newSubscription.logo || null
-    };
+      if (editingSubscription) {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .update(dbSubscription)
+          .eq('id', editingSubscription.id)
+          .select()
+          .single();
 
-    if (editingSubscription) {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .update(dbSubscription)
-        .eq('id', editingSubscription.id)
-        .select()
-        .single();
+        if (error) {
+          console.error('Supabase error:', error);
+          return;
+        }
 
-      if (error) {
-        console.error('Supabase error:', error);
-        return;
-      }
+        if (data) {
+          setSubscriptions(prev => prev.map(sub => 
+            sub.id === editingSubscription.id ? {
+              id: data.id,
+              name: data.name,
+              price: Number(data.price),
+              startDate: new Date(data.start_date),
+              nextPaymentDate: new Date(data.next_payment_date),
+              canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
+              category: data.category,
+              logo: data.logo
+            } : sub
+          ));
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .insert([dbSubscription])
+          .select()
+          .single();
 
-      if (data) {
-        setSubscriptions(prev => prev.map(sub => 
-          sub.id === editingSubscription.id ? {
+        if (error) {
+          console.error('Supabase error:', error);
+          return;
+        }
+
+        if (data) {
+          setSubscriptions(prev => [...prev, {
             id: data.id,
             name: data.name,
             price: Number(data.price),
@@ -107,32 +154,21 @@ export default function Home() {
             canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
             category: data.category,
             logo: data.logo
-          } : sub
-        ));
+          }]);
+        }
       }
     } else {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .insert([dbSubscription])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase error:', error);
-        return;
-      }
-
-      if (data) {
-        setSubscriptions(prev => [...prev, {
-          id: data.id,
-          name: data.name,
-          price: Number(data.price),
-          startDate: new Date(data.start_date),
-          nextPaymentDate: new Date(data.next_payment_date),
-          canceledDate: data.canceled_date ? new Date(data.canceled_date) : null,
-          category: data.category,
-          logo: data.logo
-        }]);
+      // Handle guest mode submission
+      if (editingSubscription) {
+        setSubscriptions(prev => prev.map(sub =>
+          sub.id === editingSubscription.id ? { ...newSubscription, id: sub.id } : sub
+        ));
+      } else {
+        const subscriptionWithId = {
+          ...newSubscription,
+          id: Date.now().toString(),
+        };
+        setSubscriptions(prev => [...prev, subscriptionWithId]);
       }
     }
     setEditingSubscription(null);
@@ -143,32 +179,32 @@ export default function Home() {
   };
 
   const handleDelete = async (subscriptionId: string) => {
-    if (!user) return;
+    if (user) {
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('id', subscriptionId);
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .delete()
-      .eq('id', subscriptionId);
-
-    if (error) {
-      console.error('Error deleting subscription:', error);
-      return;
+      if (error) {
+        console.error('Error deleting subscription:', error);
+        return;
+      }
     }
     
     setSubscriptions(prev => prev.filter(sub => sub.id !== subscriptionId));
   };
 
   const handleDeleteAll = async () => {
-    if (!user) return;
+    if (user) {
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', user.id);
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .delete()
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error deleting all subscriptions:', error);
-      return;
+      if (error) {
+        console.error('Error deleting all subscriptions:', error);
+        return;
+      }
     }
     
     setSubscriptions([]);
@@ -176,7 +212,6 @@ export default function Home() {
 
   const handleCancel = async (subscription: Subscription) => {
     if (user) {
-       
       const { error } = await supabase
         .from('subscriptions')
         .update({
@@ -191,7 +226,6 @@ export default function Home() {
       }
     }
     
-     
     const updatedSubscriptions = subscriptions.map(sub =>
       sub.id === subscription.id
         ? { ...sub, canceledDate: new Date() }
@@ -217,7 +251,7 @@ export default function Home() {
             {user ? (
               <div className="flex items-center gap-2">
                 <h2 className="text-white text-base font-medium">
-                  Welcome, {userName || user.email?.split('@')[0]}
+                  Welcome, {userName || user.user_metadata?.full_name || user.email?.split('@')[0]}
                 </h2>
                 <button 
                   className="md:hidden text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 transition-colors"

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from "@/utils/supabase";
 
 export default function SignIn() {
   const [formData, setFormData] = useState({
@@ -28,11 +29,33 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
     try {
-      setIsSubmitting(true);
-      await signIn(formData.email, formData.password);
-      router.push('/');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          // Handle unconfirmed email
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: formData.email,
+          });
+
+          if (resendError) throw resendError;
+
+          setError('Please check your email to verify your account. A new verification email has been sent.');
+          return;
+        }
+        throw error;
+      }
+
+      if (data?.user) {
+        router.push('/');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
