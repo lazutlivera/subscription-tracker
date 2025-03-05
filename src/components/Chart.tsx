@@ -1,19 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { Subscription } from '../types/subscription';
-
-const Chart = dynamic(() => import('react-apexcharts'), { 
-  ssr: false,
-  loading: () => <div>Loading chart...</div>
-});
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface ChartProps {
   subscriptions: Subscription[];
 }
 
- 
 const chartColors = [
   '#6C5DD3', // Purple (primary)
   '#FF8F6B', // Coral
@@ -33,43 +27,107 @@ const chartColors = [
 ];
 
 export function SubscriptionChart({ subscriptions }: ChartProps) {
-  const [chartHeight, setChartHeight] = useState("320");
   const [isMounted, setIsMounted] = useState(false);
-
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isMidScreen, setIsMidScreen] = useState(false);
+  const [isMidScreen2, setIsMidScreen2] = useState(false);
   useEffect(() => {
     setIsMounted(true);
-    const updateHeight = () => {
-      setChartHeight(window.innerWidth < 768 ? "250" : "320");
+    // Check if device is touch-enabled
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    
+    // Function to check screen size
+    const checkScreenSize = () => {
+      setIsMidScreen(window.innerWidth <= 1163 && window.innerWidth >= 768);
+      setIsMidScreen2(window.innerWidth <= 767 && window.innerWidth >= 481);
     };
     
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    // Initial check
+    checkScreenSize();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Add responsive styles for different screen sizes
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .recharts-sector {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      .recharts-pie {
+        outline: none !important;
+        user-select: none !important;
+      }
+      
+      @media (min-width: 768px) and (max-width: 1255px) {
+        .recharts-pie {
+          transform: scale(0.9);
+          transform-origin: center 42%;
+        }
+        .chart-container-mid {
+          margin-top: 0 !important;
+          padding-top: 20px !important;
+        }
+        .chart-center-text-mid {
+          top: 35% !important;
+        }
+      }
+
+      @media (min-width: 481px) and (max-width: 767px) {
+        .recharts-pie {
+          transform: scale(0.9);
+          transform-origin: center 100%;
+        }
+        .chart-container-mid2 {
+          margin-top: 0 !important;
+          padding-top: 20px !important;
+        }
+        .chart-center-text-mid2 {
+          top: 42% !important;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .recharts-pie {
+          transform: scale(1.1);
+          transform-origin: center 5%;
+        }
+        .chart-container-mobile {
+          margin-top: 10px !important;
+          height: auto !important;
+          min-height: 300px !important;
+        }
+        .chart-center-text-mobile {
+          top: 40% !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+      document.head.removeChild(style);
+      setIsMounted(false);
+    };
   }, []);
 
-  if (!isMounted) {
-    return <div>Loading chart...</div>;
-  }
-
-   
+  // Calculate costs
   const calculateCost = (sub: Subscription) => {
     const today = new Date();
     const startDate = new Date(sub.startDate);
     const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
 
-     
     if (cancelDate && cancelDate < startDate) {
       return 0;
     }
 
-     
     const endDate = cancelDate || today;
     
-     
     let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
     months += endDate.getMonth() - startDate.getMonth();
     
-     
     if (endDate.getDate() >= startDate.getDate()) {
       months += 1;
     }
@@ -77,15 +135,11 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     return sub.price * Math.max(0, months);
   };
 
-   
   const totalCost = subscriptions.reduce((sum, sub) => {
     const today = new Date();
     const startDate = new Date(sub.startDate);
     const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
 
-     
-     
-     
     if (startDate > today || (cancelDate && cancelDate <= today)) {
       return sum;
     }
@@ -97,54 +151,35 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     return sum + calculateCost(sub);
   }, 0);
 
-  const series = subscriptions.map(sub => sub.price);
-  const labels = subscriptions.map(sub => sub.name);
+  // Format data for Recharts
+  const chartData = subscriptions.map(sub => ({
+    name: sub.name,
+    value: sub.price,
+    percentage: ((sub.price / totalCost) * 100).toFixed(1)
+  }));
 
-  const options = {
-    chart: {
-      type: 'donut' as const,
-      background: 'transparent',
-    },
-    labels: labels,
-    theme: {
-      mode: 'dark' as const,
-    },
-    colors: chartColors,  
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '75%',
-          labels: {
-            show: true,
-            total: {
-              show: true,
-              label: 'Total Monthly',
-              color: '#FFFFFF',
-              formatter: () => `£${totalCost.toFixed(2)}`,
-            },
-          },
-        },
-      },
-    },
-    dataLabels: {
-      enabled: false,  
-    },
-    legend: {
-      show: false,
-    },
-    tooltip: {
-      theme: 'dark',
-      y: {
-        formatter: (val: number) => `£${val.toFixed(2)}`,
-      },
-    },
-    stroke: {
-      width: 0,
-    },
+  const handlePieEnter = (data: any, index: number) => {
+    setActiveIndex(index);
   };
 
+  const handlePieLeave = () => {
+    setActiveIndex(null);
+  };
+
+  const handlePieClick = (data: any, index: number) => {
+    // Do nothing - disable click functionality
+    return;
+  };
+
+  // Empty tooltip to prevent default tooltip
+  const EmptyTooltip = () => null;
+
+  if (!isMounted) {
+    return <div>Loading chart...</div>;
+  }
+
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 h-full flex flex-col overflow-hidden">
+    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 flex flex-col h-full overflow-hidden overflow-x-auto subscription-chart-container">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
         <div>
           <h2 className="text-lg md:text-xl font-semibold text-white mb-2">Subscription Overview</h2>
@@ -165,48 +200,84 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-y-auto">
-        <div className="w-full md:w-1/2 min-h-[250px] md:min-h-[400px] flex-shrink-0">
-          <Chart
-            options={options}
-            series={series}
-            type="donut"
-            width="100%"
-            height={chartHeight}
-          />
+        <div className={`w-full md:w-1/2 min-h-[250px] md:min-h-[400px] flex-shrink-0 relative ${isTouchDevice ? 'chart-container-mobile' : isMidScreen ? 'chart-container-mid' : 'chart-container-mid2'}`}>
+          <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none ${isTouchDevice ? 'chart-center-text-mobile' : isMidScreen ? 'chart-center-text-mid' : 'chart-center-text-mid2'}`} style={{ top: '30%', transform: 'translateY(-50%)' }}>
+            <div className="text-center">
+              {activeIndex !== null ? (
+                <>
+                  <p className="text-lg font-medium text-white">{chartData[activeIndex].name}</p>
+                  <p className="text-2xl font-bold text-white">£{chartData[activeIndex].value.toFixed(2)}</p>
+                  <p className="text-sm text-gray-400">{chartData[activeIndex].percentage}%</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-medium text-white">Total Monthly</p>
+                  <p className="text-2xl font-bold text-white">£{totalCost.toFixed(2)}</p>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="h-full w-full">
+            <ResponsiveContainer width="100%" height={isTouchDevice ? 300 : isMidScreen ? 300 : isMidScreen2 ? 300 : "100%"}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy={isTouchDevice ? "40%" : isMidScreen ? "40%" : isMidScreen2 ? "30%" : "30%"}
+                  innerRadius={110}
+                  outerRadius={120}
+                  paddingAngle={6}
+                  cornerRadius={6}
+                  dataKey="value"
+                  animationDuration={0}
+                  animationBegin={0}
+                  onMouseEnter={handlePieEnter}
+                  onMouseLeave={handlePieLeave}
+                  strokeWidth={0}
+                  activeIndex={-1}
+                  activeShape={undefined}
+                  isAnimationActive={false}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={chartColors[index % chartColors.length]} 
+                      stroke="none"
+                      style={{ 
+                        filter: activeIndex === index ? 'brightness(1.2)' : 'none',
+                        outline: 'none'
+                      }}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<EmptyTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         
         <div className="w-full md:w-1/2 mt-4 md:mt-0 md:pl-8">
-          <div className="h-[300px] md:h-[400px] overflow-y-auto 
-            scrollbar-thin 
-            scrollbar-thumb-[#6C5DD3] 
-            scrollbar-track-[#1C1C24]/40 
-            hover:scrollbar-thumb-[#5B4EC2]
-            [&::-webkit-scrollbar]:w-1.5
-            [&::-webkit-scrollbar-thumb]:rounded-full
-            [&::-webkit-scrollbar-thumb]:bg-gradient-to-b
-            [&::-webkit-scrollbar-thumb]:from-[#6C5DD3]
-            [&::-webkit-scrollbar-thumb]:to-[#5B4EC2]
-            [&::-webkit-scrollbar-thumb]:border
-            [&::-webkit-scrollbar-thumb]:border-[#1C1C24]
-            [&::-webkit-scrollbar-track]:rounded-full
-            [&::-webkit-scrollbar-track]:bg-[#1C1C24]/40
-            hover:[&::-webkit-scrollbar-thumb]:from-[#5B4EC2]
-            hover:[&::-webkit-scrollbar-thumb]:to-[#4B3EC2]
-            transition-colors
-            duration-150">
-            {subscriptions.map((sub, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-b-0">
+          <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#6C5DD3] scrollbar-track-[#1C1C24]/40 hover:scrollbar-thumb-[#5B4EC2]">
+            {chartData.map((item, index) => (
+              <div 
+                key={index} 
+                className={`flex items-center justify-between py-2 border-b border-gray-800 last:border-b-0 ${activeIndex === index ? 'bg-gray-800/30 rounded' : ''}`}
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+                onClick={() => isTouchDevice && setActiveIndex(index === activeIndex ? null : index)}
+                style={{ cursor: 'default' }}
+              >
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: chartColors[index % chartColors.length] }}
                   />
-                  <span className="text-white text-sm md:text-base">{sub.name}</span>
+                  <span className="text-white text-sm md:text-base">{item.name}</span>
                 </div>
                 <div className="text-gray-400 text-sm md:text-base">
-                  £{sub.price.toFixed(2)}
+                  £{Number(item.value).toFixed(2)}
                   <span className="text-xs md:text-sm ml-2">
-                    ({((sub.price / totalCost) * 100).toFixed(1)}%)
+                    ({item.percentage}%)
                   </span>
                 </div>
               </div>

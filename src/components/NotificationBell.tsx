@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/utils/supabase';
 import { createPaymentDueNotification } from '@/utils/notifications';
+import { canMakeRequest, finishRequest } from '@/utils/requestLimiter';
 
 interface Notification {
   id: string;
@@ -20,6 +21,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -33,6 +35,36 @@ export default function NotificationBell() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+      
+      const requestKey = `notifications-${user.id}`;
+      if (!canMakeRequest(requestKey)) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('deleted', false)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching notifications:', error);
+        } else if (data) {
+          setNotifications(data);
+        }
+      } catch (error) {
+        console.error('Exception fetching notifications:', error);
+      } finally {
+        finishRequest(requestKey);
+      }
+    };
+    
+    fetchNotifications();
+  }, [user]);
 
   useEffect(() => {
     if (user) {

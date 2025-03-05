@@ -76,3 +76,68 @@ body {
     width: auto !important;
   }
 }
+
+/* Add these styles to your existing globals.css file */
+
+@media (min-width: 1256px) {
+  /* Phase 1: Wide screen - side by side */
+  .grid-cols-1.lg\:grid-cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1255px) {
+  /* Phase 2: Medium screen - vertical with chart split horizontally */
+  .grid-cols-1.lg\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Force the chart to display horizontally */
+  .subscription-chart-container .flex-col.md\:flex-row {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Phase 3: Small screen - vertical with chart split vertically */
+  .grid-cols-1.lg\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Force the chart to display vertically */
+  .subscription-chart-container .flex-col.md\:flex-row {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .grid-cols-1.lg\:grid-cols-2 > div {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+  
+  /* Make sure the calendar grid stays visible */
+  .grid-cols-7 {
+    min-width: 350px;
+  }
+}
+
+/* Update the calendar grid minimum width for different screen sizes */
+@media (max-width: 480px) {
+  .grid-cols-7 {
+    min-width: 280px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 640px) {
+  .grid-cols-7 {
+    min-width: 320px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 767px) {
+  .grid-cols-7 {
+    min-width: 350px;
+  }
+}

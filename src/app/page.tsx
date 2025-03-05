@@ -12,23 +12,39 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/utils/supabase';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import logo from '@/assets/brand/logo.png';
+import ProfileFetcher from '@/components/ProfileFetcher';
+import { canMakeRequest, recordFailure } from '@/utils/circuitBreaker';
 
 export default function Home() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [profileFetchAttempted, setProfileFetchAttempted] = useState(false);
+  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
   
   const { user, signOut } = useAuth();
   const router = useRouter();
 
    
   useEffect(() => {
+    // Only fetch once per component mount
+    if (dataFetched) return;
+    
     const loadSubscriptions = async () => {
-      if (user) {
-        const { data } = await supabase
+      if (!user || !canMakeRequest()) return;
+      
+      try {
+        const { data, error } = await supabase
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id);
+        
+        if (error) {
+          console.error('Error fetching subscriptions:', error);
+          recordFailure();
+          return;
+        }
         
         if (data) {
           const transformedData = data.map(sub => ({
@@ -43,17 +59,17 @@ export default function Home() {
           }));
           setSubscriptions(transformedData);
         }
-      } else {
-        // Restore localStorage for guest mode
-        const saved = localStorage.getItem('subscriptions');
-        if (saved) {
-          setSubscriptions(JSON.parse(saved));
-        }
+        
+        // Mark data as fetched to prevent repeated requests
+        setDataFetched(true);
+      } catch (error) {
+        console.error('Exception fetching subscriptions:', error);
+        recordFailure();
       }
     };
 
     loadSubscriptions();
-  }, [user]);
+  }, [user, dataFetched]); // Only depend on user and dataFetched
 
   // Save to localStorage when subscriptions change in guest mode
   useEffect(() => {
@@ -61,35 +77,6 @@ export default function Home() {
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
     }
   }, [subscriptions, user]);
-
-   
-  useEffect(() => {
-    async function getUserProfile() {
-      if (user) {
-        // First try to get from profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-
-        // Then try to get from user metadata
-        const { data: { user: userData } } = await supabase.auth.getUser();
-        
-        if (profileData?.full_name) {
-          setUserName(profileData.full_name);
-        } else if (userData?.user_metadata?.full_name) {
-          setUserName(userData.user_metadata.full_name);
-        } else {
-          setUserName(user.email?.split('@')[0] || 'Guest');
-        }
-
-        console.log('Profile Data:', profileData);  // Debug
-        console.log('User Metadata:', userData);    // Debug
-      }
-    }
-    getUserProfile();
-  }, [user]);
 
   const handleSubscriptionSubmit = async (newSubscription: Omit<Subscription, "id">) => {
     if (user) {
@@ -234,13 +221,18 @@ export default function Home() {
     setSubscriptions(updatedSubscriptions);
   };
 
+  const handleDateClick = (date: Date) => {
+    // Implementation of handleDateClick
+  };
+
   return (
     <main className="min-h-screen pt-12 p-4 bg-[#13131A]">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8 overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
           <div className="flex-1 flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
             <div className="flex items-center gap-4">
-              <NotificationBell />
+              {/* Temporarily disable NotificationBell */}
+              {/* <NotificationBell /> */}
               <button
                 onClick={() => router.push('/settings')}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -251,7 +243,7 @@ export default function Home() {
             {user ? (
               <div className="flex items-center gap-2">
                 <h2 className="text-white text-base font-medium">
-                  Welcome, {userName || user.user_metadata?.full_name || user.email?.split('@')[0]}
+                  Welcome, {userName || (user as any).user_metadata?.full_name || user.email?.split('@')[0]}
                 </h2>
                 <button 
                   className="md:hidden text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 transition-colors"
@@ -335,11 +327,11 @@ export default function Home() {
           onDeleteAll={handleDeleteAll}
           onCancel={handleCancel}
         />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-8">
-          <div className="h-[400px] md:h-[600px]">
-            <Calendar subscriptions={subscriptions} onDateClick={() => {}} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 overflow-hidden">
+          <div className="lg:col-span-1 order-1 overflow-x-auto">
+            <Calendar subscriptions={subscriptions} onDateClick={handleDateClick} />
           </div>
-          <div className="h-[400px] md:h-[600px] mt-8 lg:mt-0">
+          <div className="lg:col-span-1 order-2 overflow-x-auto">
             <SubscriptionChart subscriptions={subscriptions} />
           </div>
         </div>

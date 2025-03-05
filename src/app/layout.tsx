@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { Inter } from 'next/font/google'
+import './globals.css';
+import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ClientLayout } from '@/components/ClientLayout';
 import Footer from '@/components/Footer';
-const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: "SubsWise - Subscription Management",
-  description: "Track and manage all your subscriptions in one place",
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'Subscription Tracker',
+  description: 'Track and manage your subscriptions',
   icons: {
     icon: '/favicon.ico',
   },
