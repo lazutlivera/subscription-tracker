@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/utils/supabase';
 
 export default function ProfileFetcher({ onProfileLoaded }: { onProfileLoaded: (name: string) => void }) {
   const { user } = useAuth();
@@ -10,17 +10,18 @@ export default function ProfileFetcher({ onProfileLoaded }: { onProfileLoaded: (
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Reset the fetch attempt when user changes
-    if (user) {
-      setProfileFetchAttempted(false);
-    }
-  }, [user?.id]); // Only reset when user ID changes
-
-  useEffect(() => {
     if (user && !profileFetchAttempted && !isLoading) {
       setProfileFetchAttempted(true);
       setIsLoading(true);
       
+      // Use metadata name if available
+      if (user.user_metadata?.full_name) {
+        onProfileLoaded(user.user_metadata.full_name);
+        setIsLoading(false);
+        return;
+      }
+
+      // Only fetch from profiles if no metadata name exists
       const getProfile = async () => {
         try {
           const { data, error } = await supabase
@@ -29,20 +30,14 @@ export default function ProfileFetcher({ onProfileLoaded }: { onProfileLoaded: (
             .eq('id', user.id)
             .single();
             
-          if (error) {
-            console.error('Error fetching profile:', error);
-            // Fallback to user metadata
-            onProfileLoaded((user as any).user_metadata?.full_name || user.email?.split('@')[0]);
-          } else if (data) {
+          if (data?.full_name) {
             onProfileLoaded(data.full_name);
           } else {
-            // Fallback to user metadata
-            onProfileLoaded((user as any).user_metadata?.full_name || user.email?.split('@')[0]);
+            onProfileLoaded(user.email?.split('@')[0] || 'User');
           }
         } catch (error) {
           console.error('Exception fetching profile:', error);
-          // Fallback to user metadata
-          onProfileLoaded((user as any).user_metadata?.full_name || user.email?.split('@')[0]);
+          onProfileLoaded(user.email?.split('@')[0] || 'User');
         } finally {
           setIsLoading(false);
         }
@@ -52,5 +47,6 @@ export default function ProfileFetcher({ onProfileLoaded }: { onProfileLoaded: (
     }
   }, [user, profileFetchAttempted, onProfileLoaded, isLoading]);
 
-  return null; // This component doesn't render anything
+
+  return null; 
 } 

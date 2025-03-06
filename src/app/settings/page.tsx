@@ -20,6 +20,7 @@ export default function Settings() {
     last_sign_in?: string;
   }>({});
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -27,28 +28,65 @@ export default function Settings() {
       return;
     }
 
+    if (profileLoaded) return;
+
     const loadProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
+      try {
+        // First check if the profile exists - fix the query format
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id);
+        
+        // Check if we got any results
+        if (error || !data || data.length === 0) {
+          console.error('Error or no profile found:', error);
+          
+          // Try to create a profile
+          try {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .upsert([
+                {
+                  id: user.id,
+                  full_name: user.email?.split('@')[0] || 'User',
+                }
+              ], { onConflict: 'id' });
+            
+            if (insertError) {
+              console.error('Error creating profile:', insertError);
+            } else {
+              setFormData(prev => ({ 
+                ...prev, 
+                fullName: user.email?.split('@')[0] || 'User'
+              }));
+            }
+          } catch (insertErr) {
+            console.error('Exception creating profile:', insertErr);
+          }
+        } else if (data && data.length > 0) {
+          // We have profile data
+          setFormData(prev => ({ ...prev, fullName: data[0].full_name }));
+        }
 
-      if (data) {
-        setFormData(prev => ({ ...prev, fullName: data.full_name }));
-      }
-
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        setUserMetadata({
-          created_at: userData.user.created_at,
-          last_sign_in: userData.user.last_sign_in_at,
-        });
+        // Continue with user metadata
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          setUserMetadata({
+            created_at: userData.user.created_at,
+            last_sign_in: userData.user.last_sign_in_at,
+          });
+        }
+        
+        setProfileLoaded(true);
+      } catch (error) {
+        console.error('Exception in loadProfile:', error);
+        setProfileLoaded(true);
       }
     };
 
     loadProfile();
-  }, [user, router]);
+  }, [user, router, profileLoaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

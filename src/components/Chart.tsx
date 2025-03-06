@@ -113,49 +113,36 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     };
   }, []);
 
-  // Calculate costs
-  const calculateCost = (sub: Subscription) => {
+  // Calculate total monthly cost
+  const totalMonthly = subscriptions
+    .filter(sub => !sub.canceled_date) // Only include active subscriptions
+    .reduce((total, sub) => total + Number(sub.price), 0);
+
+  // Calculate total spent to date
+  const totalSpent = subscriptions.reduce((total, sub) => {
+    const startDate = new Date(sub.start_date);
     const today = new Date();
-    const startDate = new Date(sub.startDate);
-    const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
-
-    if (cancelDate && cancelDate < startDate) {
-      return 0;
-    }
-
-    const endDate = cancelDate || today;
     
-    let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
-    months += endDate.getMonth() - startDate.getMonth();
+    // Skip future subscriptions
+    if (startDate > today) {
+      return total;
+    }
+
+    const endDate = sub.canceled_date ? 
+      new Date(Math.min(new Date(sub.canceled_date).getTime(), today.getTime())) : 
+      today;
+
+    const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                      (endDate.getMonth() - startDate.getMonth());
     
-    if (endDate.getDate() >= startDate.getDate()) {
-      months += 1;
-    }
-
-    return sub.price * Math.max(0, months);
-  };
-
-  const totalCost = subscriptions.reduce((sum, sub) => {
-    const today = new Date();
-    const startDate = new Date(sub.startDate);
-    const cancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
-
-    if (startDate > today || (cancelDate && cancelDate <= today)) {
-      return sum;
-    }
-
-    return sum + sub.price;
-  }, 0);
-
-  const spentAmount = subscriptions.reduce((sum, sub) => {
-    return sum + calculateCost(sub);
+    return total + (Number(sub.price) * Math.max(1, monthsDiff));
   }, 0);
 
   // Format data for Recharts
   const chartData = subscriptions.map(sub => ({
     name: sub.name,
     value: sub.price,
-    percentage: ((sub.price / totalCost) * 100).toFixed(1)
+    percentage: ((sub.price / totalMonthly) * 100).toFixed(1)
   }));
 
   const handlePieEnter = (data: any, index: number) => {
@@ -174,49 +161,46 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
   // Empty tooltip to prevent default tooltip
   const EmptyTooltip = () => null;
 
+  const showCenterText = subscriptions.length > 0;
+
   if (!isMounted) {
     return <div>Loading chart...</div>;
   }
 
   return (
-    <div className="bg-[#1C1C27] rounded-xl p-4 md:p-8 flex flex-col h-full overflow-hidden overflow-x-auto subscription-chart-container">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+    <div className="bg-[#1C1C27] rounded-xl p-6">
+      <h2 className="text-xl font-semibold text-white mb-4">Subscription Overview</h2>
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
-          <h2 className="text-lg md:text-xl font-semibold text-white mb-2">Subscription Overview</h2>
-          <div className="flex gap-4 md:gap-12">
-            <div>
-              <p className="text-xl md:text-3xl font-bold text-white">
-                £{totalCost.toFixed(2)}
-                <span className="text-xs md:text-sm text-gray-400 ml-2">/ month</span>
-              </p>
-              <p className="text-xs md:text-sm text-gray-400 mt-1">Total Monthly Cost</p>
-            </div>
-            <div>
-              <p className="text-xl md:text-3xl font-bold text-white">£{spentAmount.toFixed(2)}</p>
-              <p className="text-xs md:text-sm text-gray-400 mt-1">Total Spent to Date</p>
-            </div>
-          </div>
+          <h3 className="text-2xl font-bold text-white">£{totalMonthly.toFixed(2)}</h3>
+          <p className="text-gray-400 text-sm">Total Monthly Cost</p>
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold text-white">£{totalSpent.toFixed(2)}</h3>
+          <p className="text-gray-400 text-sm">Total Spent to Date</p>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 overflow-y-auto">
         <div className={`w-full md:w-1/2 min-h-[250px] md:min-h-[400px] flex-shrink-0 relative ${isTouchDevice ? 'chart-container-mobile' : isMidScreen ? 'chart-container-mid' : 'chart-container-mid2'}`}>
-          <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none ${isTouchDevice ? 'chart-center-text-mobile' : isMidScreen ? 'chart-center-text-mid' : 'chart-center-text-mid2'}`} style={{ top: '30%', transform: 'translateY(-50%)' }}>
-            <div className="text-center">
-              {activeIndex !== null ? (
-                <>
-                  <p className="text-lg font-medium text-white">{chartData[activeIndex].name}</p>
-                  <p className="text-2xl font-bold text-white">£{chartData[activeIndex].value.toFixed(2)}</p>
-                  <p className="text-sm text-gray-400">{chartData[activeIndex].percentage}%</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-lg font-medium text-white">Total Monthly</p>
-                  <p className="text-2xl font-bold text-white">£{totalCost.toFixed(2)}</p>
-                </>
-              )}
+          {showCenterText && (
+            <div className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none ${isTouchDevice ? 'chart-center-text-mobile' : isMidScreen ? 'chart-center-text-mid' : 'chart-center-text-mid2'}`} style={{ top: '30%', transform: 'translateY(-50%)' }}>
+              <div className="text-center">
+                {activeIndex !== null ? (
+                  <>
+                    <p className="text-lg font-medium text-white">{chartData[activeIndex].name}</p>
+                    <p className="text-2xl font-bold text-white">£{chartData[activeIndex].value.toFixed(2)}</p>
+                    <p className="text-sm text-gray-400">{chartData[activeIndex].percentage}%</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium text-white">Total Monthly</p>
+                    <p className="text-2xl font-bold text-white">£{totalMonthly.toFixed(2)}</p>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
           <div className="h-full w-full">
             <ResponsiveContainer width="100%" height={isTouchDevice ? 300 : isMidScreen ? 300 : isMidScreen2 ? 300 : "100%"}>
               <PieChart>

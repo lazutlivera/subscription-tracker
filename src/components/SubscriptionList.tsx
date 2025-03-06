@@ -13,6 +13,16 @@ interface SubscriptionListProps {
   onCancel: (subscription: Subscription) => void;
 }
 
+const formatDate = (dateString: string | undefined) => {
+  try {
+    if (!dateString) return 'No date set';
+    return format(new Date(dateString), 'MMM dd, yyyy');
+  } catch (error) {
+    console.error('Invalid date:', dateString);
+    return 'Invalid date';
+  }
+};
+
 export default function SubscriptionList({ 
   subscriptions, 
   onEdit, 
@@ -94,7 +104,7 @@ export default function SubscriptionList({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-xs md:text-sm">Next Payment</span>
                   <span className="text-white text-sm md:text-base">
-                    {format(subscription.nextPaymentDate, 'MMM dd, yyyy')}
+                    {formatDate(subscription.next_payment_date)}
                   </span>
                 </div>
                 {!subscription.canceledDate && (

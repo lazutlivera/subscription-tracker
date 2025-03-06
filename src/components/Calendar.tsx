@@ -34,8 +34,8 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
 
   const getDaySubscriptions = (day: number) => {
     return subscriptions.filter(sub => {
-      const subStartDate = new Date(sub.startDate);
-      const subCancelDate = sub.canceledDate ? new Date(sub.canceledDate) : null;
+      const subStartDate = new Date(sub.start_date);
+      const subCancelDate = sub.canceled_date ? new Date(sub.canceled_date) : null;
       const currentMonthDate = new Date(
         currentDate.getFullYear(), 
         currentDate.getMonth(), 
@@ -68,7 +68,9 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
   };
 
   const handleDateClick = (date: Date) => {
+    
     const subs = getDaySubscriptions(date.getDate());
+    
     if (subs.length > 0) {
       setSelectedDate(date);
       setSelectedSubscriptions(subs);
@@ -105,15 +107,6 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [selectedDate]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      console.log('Popup should be visible', {
-        date: selectedDate,
-        subscriptions: selectedSubscriptions,
-      });
-    }
-  }, [selectedDate, selectedSubscriptions]);
 
   return (
     <div className="bg-[#1C1C27] rounded-xl p-4 pb-8 md:p-6 h-fit flex flex-col overflow-x-auto">
@@ -162,7 +155,9 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
           return (
             <div
               key={day}
-              onClick={() => handleDateClick(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))}
+              onClick={() => {
+                handleDateClick(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+              }}
               className={`
                 p-1 rounded-lg cursor-pointer
                 relative group transition-all duration-200
@@ -273,7 +268,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
                     </div>
                   </div>
                   <div>
-                    {sub.canceledDate ? (
+                    {sub.canceled_date ? (
                       <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">Canceled</span>
                     ) : (
                       <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Active</span>
