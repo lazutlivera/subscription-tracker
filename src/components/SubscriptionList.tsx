@@ -4,6 +4,7 @@ import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { Subscription } from '../types/subscription';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 
 interface SubscriptionListProps {
   subscriptions: Subscription[];
@@ -22,6 +23,32 @@ const formatDate = (dateString: string | undefined) => {
     return 'Invalid date';
   }
 };
+
+const isPaymentApproaching = (nextPaymentDate: string | Date) => {
+  const paymentDate = new Date(nextPaymentDate);
+  const today = new Date();
+  const diffTime = paymentDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 && diffDays <= 3;
+};
+
+const PulsingBorder = () => (
+  <motion.div
+    className="absolute inset-0 rounded-lg border border-red-500/30"
+    animate={{
+      boxShadow: [
+        "0 0 20px -5px rgba(239,68,68,0.2)",
+        "0 0 20px -5px rgba(239,68,68,0.4)",
+        "0 0 20px -5px rgba(239,68,68,0.2)"
+      ]
+    }}
+    transition={{
+      duration: 2,
+      ease: "easeInOut",
+      repeat: Infinity,
+    }}
+  />
+);
 
 export default function SubscriptionList({ 
   subscriptions, 
@@ -53,8 +80,23 @@ export default function SubscriptionList({
           {subscriptions.map((subscription) => (
             <div
               key={subscription.id}
-              className="bg-[#23232D] rounded-lg p-4 flex flex-col"
+              className={`bg-[${
+                isPaymentApproaching(subscription.next_payment_date || subscription.nextPaymentDate) 
+                  ? '#2D1F23' 
+                  : '#23232D'
+              }] rounded-lg p-4 flex flex-col relative`}
             >
+              {isPaymentApproaching(subscription.next_payment_date || subscription.nextPaymentDate) && (
+                <>
+                  <PulsingBorder />
+                  <div className="absolute top-1 right-4 text-xs text-red-400/90">
+                    Payment in {Math.ceil(
+                      (new Date(subscription.next_payment_date || subscription.nextPaymentDate).getTime() - new Date().getTime()) / 
+                      (1000 * 60 * 60 * 24)
+                    )}d
+                  </div>
+                </>
+              )}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   {subscription.logo ? (
