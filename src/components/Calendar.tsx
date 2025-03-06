@@ -68,11 +68,17 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
   };
 
   const handleDateClick = (date: Date) => {
+    console.log('Date clicked:', date);
+    
     const subs = getDaySubscriptions(date.getDate());
+    console.log('Subscriptions found:', subs.length);
+    
     if (subs.length > 0) {
       setSelectedDate(date);
       setSelectedSubscriptions(subs);
       setShowModal(true);
+      
+      console.log('Modal should be visible now');
     }
   };
 
@@ -162,7 +168,10 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
           return (
             <div
               key={day}
-              onClick={() => handleDateClick(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))}
+              onClick={() => {
+                console.log('Cell clicked for day:', day);
+                handleDateClick(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+              }}
               className={`
                 p-1 rounded-lg cursor-pointer
                 relative group transition-all duration-200

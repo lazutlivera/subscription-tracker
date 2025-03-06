@@ -38,28 +38,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user ? {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
-        } : null);
-        // Clear any existing sessions in localStorage
-        localStorage.removeItem('supabase.auth.token');
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        router.push('/signin');
-      } else if (event === 'TOKEN_REFRESHED') {
-        setUser(session?.user ? {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
-        } : null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          // Get the user's profile to ensure we have the correct name
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', session.user.id)
+            .single();
+          
+          // Set user with profile data if available
+          setUser(session.user ? {
+            ...session.user,
+            user_metadata: {
+              ...session.user.user_metadata,
+              full_name: data?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
+            }
+          } : null);
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
       }
-    });
+    );
 
     // Listen for storage events (other tabs)
     const handleStorageChange = (e: StorageEvent) => {
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [router, user]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     const { user, session } = await signInWithEmail(email, password);

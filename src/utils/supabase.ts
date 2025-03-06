@@ -24,29 +24,34 @@ export const signInWithEmail = async (email: string, password: string) => {
 };
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
-   
+  console.log('Signing up with name:', name); // Debug log
+  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        name,
+        full_name: name  // This should set the correct name in metadata
       },
     },
   });
+
   if (error) throw error;
 
-   
+  // Create profile immediately after signup
   if (data.user) {
     const { error: profileError } = await supabase
       .from('profiles')
       .insert([
         {
           id: data.user.id,
-          full_name: name,
+          full_name: name,  // Use the original name, not a fallback
         }
       ]);
-    if (profileError) throw profileError;
+
+    if (profileError) {
+      console.error('Failed to create profile:', profileError);
+    }
   }
 
   return data;

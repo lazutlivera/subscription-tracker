@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SubscriptionChart } from '../components/Chart';
 import SubscriptionForm from '../components/SubscriptionForm';
 import { Subscription } from '../types/subscription';
@@ -16,24 +16,34 @@ import ProfileFetcher from '@/components/ProfileFetcher';
 import { canMakeRequest, recordFailure } from '@/utils/circuitBreaker';
 
 export default function Home() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [profileFetchAttempted, setProfileFetchAttempted] = useState(false);
-  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(false);
-  const [dataFetched, setDataFetched] = useState(false);
+  const dataFetchedRef = useRef(false);
   
-  const { user, signOut } = useAuth();
-  const router = useRouter();
-
-   
   useEffect(() => {
-    // Only fetch once per component mount
-    if (dataFetched) return;
+    // Only fetch data once per component mount
+    if (dataFetchedRef.current) return;
     
     const loadSubscriptions = async () => {
-      if (!user || !canMakeRequest()) return;
-      
+      if (!user) {
+        // Handle guest mode
+        const saved = localStorage.getItem('subscriptions');
+        if (saved) {
+          setSubscriptions(JSON.parse(saved, (key, value) => {
+            if (key === 'startDate' || key === 'canceledDate' || key === 'nextPaymentDate') {
+              return value ? new Date(value) : null;
+            }
+            return value;
+          }));
+        }
+        dataFetchedRef.current = true;
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('subscriptions')
@@ -42,7 +52,6 @@ export default function Home() {
         
         if (error) {
           console.error('Error fetching subscriptions:', error);
-          recordFailure();
           return;
         }
         
@@ -60,16 +69,20 @@ export default function Home() {
           setSubscriptions(transformedData);
         }
         
-        // Mark data as fetched to prevent repeated requests
-        setDataFetched(true);
+        // Mark data as fetched
+        dataFetchedRef.current = true;
       } catch (error) {
         console.error('Exception fetching subscriptions:', error);
-        recordFailure();
       }
     };
 
     loadSubscriptions();
-  }, [user, dataFetched]); // Only depend on user and dataFetched
+  }, [user]);
+
+  // Reset the fetch flag when user changes
+  useEffect(() => {
+    dataFetchedRef.current = false;
+  }, [user?.id]);
 
   // Save to localStorage when subscriptions change in guest mode
   useEffect(() => {
@@ -225,6 +238,11 @@ export default function Home() {
     // Implementation of handleDateClick
   };
 
+  const handleProfileLoaded = (name: string) => {
+    console.log('Profile loaded with name:', name);
+    setUserName(name);
+  };
+
   return (
     <main className="min-h-screen pt-12 p-4 bg-[#13131A]">
       <div className="max-w-7xl mx-auto space-y-8 overflow-hidden">
@@ -336,6 +354,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <ProfileFetcher onProfileLoaded={handleProfileLoaded} />
     </main>
   );
 }
