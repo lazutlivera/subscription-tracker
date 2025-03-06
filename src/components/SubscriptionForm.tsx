@@ -70,18 +70,32 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
    
   useEffect(() => {
     if (existingSubscription) {
-      setFormData({
-        name: existingSubscription.name,
-        price: existingSubscription.price.toString(),
-        startDate: new Date(existingSubscription.startDate).toISOString().split('T')[0],
-        canceledDate: existingSubscription.canceledDate 
-          ? new Date(existingSubscription.canceledDate).toISOString().split('T')[0]
-          : null,
-        billingCycle: 'monthly',
-        logo: existingSubscription.logo || '',
-        category: (existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other') as SubscriptionCategory,
-      });
-      setIsCustom(false);
+      try {
+        const startDate = existingSubscription.start_date || existingSubscription.startDate;
+        const canceledDate = existingSubscription.canceled_date || existingSubscription.canceledDate;
+
+        setFormData({
+          name: existingSubscription.name,
+          price: existingSubscription.price.toString(),
+          startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          canceledDate: canceledDate ? new Date(canceledDate).toISOString().split('T')[0] : '',
+          billingCycle: 'monthly',
+          logo: existingSubscription.logo || '',
+          category: existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other'
+        });
+      } catch (error) {
+        console.error('Error setting form data:', error);
+        // Set default values if date parsing fails
+        setFormData({
+          name: existingSubscription.name,
+          price: existingSubscription.price.toString(),
+          startDate: new Date().toISOString().split('T')[0],
+          canceledDate: '',
+          billingCycle: 'monthly',
+          logo: existingSubscription.logo || '',
+          category: existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other'
+        });
+      }
     }
   }, [existingSubscription]);
 
