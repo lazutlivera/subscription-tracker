@@ -76,7 +76,7 @@ export default function SignIn() {
 
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
         {message && (
-          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500 text-blue-500 rounded-lg">
+          <div className="mb-4 p-4 bg-blue-50 text-blue-600 rounded-lg">
             {message}
           </div>
         )}

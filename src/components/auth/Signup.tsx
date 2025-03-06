@@ -38,40 +38,10 @@ export default function SignUp() {
     }
 
     try {
-      // First signup
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name
-          }
-        }
-      });
-
-      if (signUpError) throw signUpError;
-
-      if (authData.user) {
-        // Create profile first
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              full_name: formData.name
-            }
-          ]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          throw profileError;
-        }
-
-        // Only redirect after profile is created
-        router.push('/signin?message=Please check your email to verify your account');
-      }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to create account');
+      await signUp(formData.name, formData.email, formData.password);
+      router.push('/signin?message=Please check your email to verify your account');
+    } catch (error: any) {
+      setError(error.message || 'An error occurred during signup');
     } finally {
       setIsSubmitting(false);
     }

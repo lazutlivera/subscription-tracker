@@ -24,36 +24,17 @@ export const signInWithEmail = async (email: string, password: string) => {
 };
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
-  console.log('Signing up with name:', name); // Debug log
-  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        full_name: name  // This should set the correct name in metadata
-      },
-    },
+        full_name: name
+      }
+    }
   });
 
   if (error) throw error;
-
-  // Create profile immediately after signup
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([
-        {
-          id: data.user.id,
-          full_name: name,  // Use the original name, not a fallback
-        }
-      ]);
-
-    if (profileError) {
-      console.error('Failed to create profile:', profileError);
-    }
-  }
-
   return data;
 };
 
@@ -82,4 +63,54 @@ export const addSubscription = async (subscription: Omit<Subscription, 'id'>, us
   
   if (error) throw error;
   return data;
-}; 
+};
+
+export async function checkDuplicateSubscription(name: string, userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .eq('canceled_date', null)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking duplicate:', error);
+      return false;
+    }
+
+    return !!data;
+  } catch (error) {
+    console.error('Error checking duplicate subscription:', error);
+    return false;
+  }
+}
+
+export async function createSubscription(subscriptionData: {
+  name: string;
+  price: number;
+  start_date: string;
+  next_payment_date: string;
+  user_id: string;
+  category?: string;
+}) {
+  try {
+    const isDuplicate = await checkDuplicateSubscription(subscriptionData.name, subscriptionData.user_id);
+    if (isDuplicate) {
+      throw new Error('You already have an active subscription with this name');
+    }
+
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert([subscriptionData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    throw error;
+  }
+} 
