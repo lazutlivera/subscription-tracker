@@ -90,3 +90,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [Supabase](https://supabase.io/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Recharts](https://recharts.org/)
+
+## Latest Release (v1.4)
+- Added payment approaching indicators with animated effects
+- Improved subscription management UI
+- Various bug fixes and performance improvements
+
+[See full changelog](CHANGELOG.md)
