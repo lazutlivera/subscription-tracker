@@ -70,9 +70,11 @@ export async function checkDuplicateSubscription(name: string, userId: string) {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('id')
-      .eq('name', name)
-      .eq('user_id', userId)
-      .eq('canceled_date', null)
+      .match({
+        name: name,
+        user_id: userId,
+        canceled_date: null
+      })
       .maybeSingle();
 
     if (error) {
