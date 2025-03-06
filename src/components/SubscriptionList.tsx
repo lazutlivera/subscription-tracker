@@ -80,11 +80,11 @@ export default function SubscriptionList({
           {subscriptions.map((subscription) => (
             <div
               key={subscription.id}
-              className={`bg-[${
+              className={`${
                 isPaymentApproaching(subscription.next_payment_date || subscription.nextPaymentDate) 
-                  ? '#2D1F23' 
-                  : '#23232D'
-              }] rounded-lg p-4 flex flex-col relative`}
+                  ? 'bg-[#2D1F23]' 
+                  : 'bg-[#23232D]'
+              } rounded-lg p-4 flex flex-col relative`}
             >
               {isPaymentApproaching(subscription.next_payment_date || subscription.nextPaymentDate) && (
                 <>
