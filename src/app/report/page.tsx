@@ -37,7 +37,7 @@ export default function Report() {
           setSubscriptions(transformedData);
         }
       } else {
-        setSubscriptions([]); // Clear subscriptions when not signed in
+        setSubscriptions([]);
       }
     };
 
