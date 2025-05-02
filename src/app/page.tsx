@@ -25,9 +25,9 @@ export default function Home() {
   const [userName, setUserName] = useState<string>('');
   const [profileFetchAttempted, setProfileFetchAttempted] = useState(false);
   const dataFetchedRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-  
     if (dataFetchedRef.current) return;
     
     const loadSubscriptions = async () => {
@@ -69,16 +69,54 @@ export default function Home() {
         }
         
         if (data) {
-          const transformedData = data.map(sub => ({
-            ...sub,
-            start_date: sub.start_date || new Date().toISOString(),
-            next_payment_date: sub.next_payment_date || new Date().toISOString(),
-            canceled_date: sub.canceled_date || null
-          }));
+          // Update any past payment dates before setting the state
+          const today = new Date();
+          const transformedData = data.map(sub => {
+            const nextPaymentDate = new Date(sub.next_payment_date || new Date().toISOString());
+            let updatedNextPaymentDate = nextPaymentDate;
+            
+            // If subscription is not canceled and next payment date is in the past
+            if (!sub.canceled_date && nextPaymentDate < today) {
+              // Calculate new next payment date
+              updatedNextPaymentDate = new Date(nextPaymentDate);
+              while (updatedNextPaymentDate < today) {
+                updatedNextPaymentDate = new Date(
+                  updatedNextPaymentDate.getFullYear(),
+                  updatedNextPaymentDate.getMonth() + 1,
+                  updatedNextPaymentDate.getDate()
+                );
+              }
+              
+              // Update in database
+              supabase
+                .from('subscriptions')
+                .update({
+                  next_payment_date: updatedNextPaymentDate.toISOString()
+                })
+                .eq('id', sub.id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.error('Error updating next payment date:', error);
+                  }
+                });
+            }
+            
+            return {
+              ...sub,
+              // Ensure all date fields are strings
+              start_date: sub.start_date || new Date().toISOString(),
+              next_payment_date: updatedNextPaymentDate.toISOString(),
+              canceled_date: sub.canceled_date || null,
+              // Add camelCase versions for component compatibility
+              startDate: sub.start_date || new Date().toISOString(),
+              nextPaymentDate: updatedNextPaymentDate.toISOString(),
+              canceledDate: sub.canceled_date || null
+            };
+          });
+          
           setSubscriptions(transformedData);
         }
         
-
         dataFetchedRef.current = true;
       } catch (error) {
         console.error('Exception fetching subscriptions:', error);
@@ -87,11 +125,6 @@ export default function Home() {
 
     loadSubscriptions();
   }, [user]);
-
-
-  useEffect(() => {
-    dataFetchedRef.current = false;
-  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -231,11 +264,13 @@ export default function Home() {
   };
 
   const handleCancel = async (subscription: Subscription) => {
+    const cancelationDate = new Date().toISOString();
+    
     if (user) {
       const { error } = await supabase
         .from('subscriptions')
         .update({
-          canceled_date: new Date().toISOString()
+          canceled_date: cancelationDate
         })
         .eq('id', subscription.id)
         .eq('user_id', user.id);
@@ -248,7 +283,11 @@ export default function Home() {
     
     const updatedSubscriptions = subscriptions.map(sub =>
       sub.id === subscription.id
-        ? { ...sub, canceledDate: new Date() }
+        ? { 
+            ...sub, 
+            canceled_date: cancelationDate,
+            canceledDate: cancelationDate 
+          }
         : sub
     );
     setSubscriptions(updatedSubscriptions);
@@ -262,24 +301,19 @@ export default function Home() {
   };
 
   const transformSubscriptionsForCalendar = (subs: Subscription[]) => {
-    return subs.map(sub => {
-      const startDate = sub.start_date ? new Date(sub.start_date) : 
-                       sub.startDate ? new Date(sub.startDate) : new Date();
-                       
-      const canceledDate = sub.canceled_date ? new Date(sub.canceled_date) : 
-                          sub.canceledDate ? new Date(sub.canceledDate) : null;
-                          
-      const nextPaymentDate = sub.next_payment_date ? new Date(sub.next_payment_date) :
-                             sub.nextPaymentDate ? new Date(sub.nextPaymentDate) : new Date();
-
+    return subs.filter(sub => 
+      sub.next_payment_date || sub.nextPaymentDate
+    ).map(sub => {
+      // Create a copy of the subscription without transforming dates to Date objects
       return {
-        ...sub,
-        startDate,
-        canceledDate,
-        nextPaymentDate
+        ...sub
       };
     });
   };
+
+  useEffect(() => {
+    dataFetchedRef.current = false;
+  }, [user?.id]);
 
   return (
     <main className="min-h-screen pt-12 p-4 bg-[#13131A]">
