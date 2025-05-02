@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { Subscription } from '../types/subscription';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 interface SubscriptionListProps {
   subscriptions: Subscription[];
@@ -24,7 +26,9 @@ const formatDate = (dateString: string | undefined) => {
   }
 };
 
-const isPaymentApproaching = (nextPaymentDate: string | Date) => {
+const isPaymentApproaching = (nextPaymentDate: string | Date | undefined) => {
+  if (!nextPaymentDate) return false;
+  
   const paymentDate = new Date(nextPaymentDate);
   const today = new Date();
   const diffTime = paymentDate.getTime() - today.getTime();
@@ -57,6 +61,64 @@ export default function SubscriptionList({
   onDeleteAll,
   onCancel 
 }: SubscriptionListProps) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
+
+  useEffect(() => {
+    // Check and update any outdated payment dates
+    const today = new Date();
+    
+    subscriptions.forEach(subscription => {
+      if (subscription.canceledDate || subscription.canceled_date) {
+        return; // Skip canceled subscriptions
+      }
+      
+      const nextPaymentDateStr = subscription.next_payment_date || subscription.nextPaymentDate;
+      if (!nextPaymentDateStr) {
+        return; // Skip if no date is available
+      }
+      
+      const nextPaymentDate = new Date(nextPaymentDateStr);
+      
+      if (nextPaymentDate < today) {
+        // Calculate new next payment date
+        let newNextPaymentDate = new Date(nextPaymentDate);
+        while (newNextPaymentDate < today) {
+          newNextPaymentDate = new Date(
+            newNextPaymentDate.getFullYear(),
+            newNextPaymentDate.getMonth() + 1,
+            newNextPaymentDate.getDate()
+          );
+        }
+        
+        // Update the payment date in the database
+        supabase
+          .from('subscriptions')
+          .update({
+            next_payment_date: newNextPaymentDate.toISOString()
+          })
+          .eq('id', subscription.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error('Error updating next payment date:', error);
+            } else {
+              // Notify the parent component that data has changed and needs reloading
+              if (onEdit) {
+                const updatedSubscription = {
+                  ...subscription,
+                  next_payment_date: newNextPaymentDate.toISOString(),
+                  nextPaymentDate: newNextPaymentDate.toISOString()
+                };
+                onEdit(updatedSubscription);
+              }
+            }
+          });
+      }
+    });
+  }, [subscriptions, onEdit, supabase]);
+
   return (
     <div className="bg-[#1C1C27] rounded-xl p-4 md:p-6 shadow-lg">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-2 md:gap-0">
@@ -91,7 +153,7 @@ export default function SubscriptionList({
                   <PulsingBorder />
                   <div className="absolute top-1 right-4 text-xs text-red-400/90">
                     Payment in {Math.ceil(
-                      (new Date(subscription.next_payment_date || subscription.nextPaymentDate).getTime() - new Date().getTime()) / 
+                      (new Date(subscription.next_payment_date || subscription.nextPaymentDate || new Date().toISOString()).getTime() - new Date().getTime()) / 
                       (1000 * 60 * 60 * 24)
                     )}d
                   </div>
@@ -146,10 +208,10 @@ export default function SubscriptionList({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-xs md:text-sm">Next Payment</span>
                   <span className="text-white text-sm md:text-base">
-                    {formatDate(subscription.next_payment_date)}
+                    {formatDate(subscription.next_payment_date || subscription.nextPaymentDate)}
                   </span>
                 </div>
-                {!subscription.canceledDate && (
+                {!subscription.canceledDate && !subscription.canceled_date && (
                   <button
                     onClick={() => onCancel(subscription)}
                     className="w-full mt-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg py-1.5 md:py-2 text-sm md:text-base transition-colors"
