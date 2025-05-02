@@ -31,7 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Get initial session
     const session = supabase.auth.getSession();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -66,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
       setUser(null);
       
-      // Clear ALL localStorage
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();

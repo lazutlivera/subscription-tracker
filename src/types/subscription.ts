@@ -8,4 +8,8 @@ export interface Subscription {
   user_id: string;
   category?: string;
   logo?: string | null;
+  // Aliases for compatibility with components using camelCase
+  startDate?: string;
+  nextPaymentDate?: string;
+  canceledDate?: string | null;
 }

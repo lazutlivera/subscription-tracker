@@ -83,7 +83,7 @@ export default function Calendar({ subscriptions, onDateClick }: CalendarProps) 
     setTimeout(() => {
       setSelectedDate(null);
       setSelectedSubscriptions([]);
-    }, 300); // Wait for animation to complete
+    }, 300); 
   };
 
   const previousMonth = () => {

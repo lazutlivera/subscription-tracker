@@ -27,19 +27,18 @@ export default function Home() {
   const dataFetchedRef = useRef(false);
   
   useEffect(() => {
-    // Only fetch data once per component mount
+  
     if (dataFetchedRef.current) return;
     
     const loadSubscriptions = async () => {
       if (!user) {
-        // Handle guest mode
+    
         const saved = localStorage.getItem('subscriptions');
         if (saved) {
           try {
             const parsedData = JSON.parse(saved);
             const guestSubscriptions = parsedData.map((sub: any) => ({
               ...sub,
-              // Convert dates to proper format for both snake_case and camelCase
               start_date: sub.start_date || sub.startDate || new Date().toISOString(),
               next_payment_date: sub.next_payment_date || sub.nextPaymentDate || new Date().toISOString(),
               canceled_date: sub.canceled_date || sub.canceledDate || null,
@@ -79,7 +78,7 @@ export default function Home() {
           setSubscriptions(transformedData);
         }
         
-        // Mark data as fetched
+
         dataFetchedRef.current = true;
       } catch (error) {
         console.error('Exception fetching subscriptions:', error);
@@ -89,12 +88,11 @@ export default function Home() {
     loadSubscriptions();
   }, [user]);
 
-  // Reset the fetch flag when user changes
+
   useEffect(() => {
     dataFetchedRef.current = false;
   }, [user?.id]);
 
-  // Save to localStorage when subscriptions change in guest mode
   useEffect(() => {
     if (!user) {
       localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
@@ -163,7 +161,6 @@ export default function Home() {
         console.error('Full error details:', error);
       }
     } else {
-      // Handle guest mode submission
       const now = new Date().toISOString();
       if (editingSubscription) {
         setSubscriptions(prev => prev.map(sub =>
@@ -258,7 +255,6 @@ export default function Home() {
   };
 
   const handleDateClick = (date: Date) => {
-    // Implementation of handleDateClick
   };
 
   const handleProfileLoaded = (name: string) => {
@@ -267,7 +263,6 @@ export default function Home() {
 
   const transformSubscriptionsForCalendar = (subs: Subscription[]) => {
     return subs.map(sub => {
-      // Handle both string dates and Date objects
       const startDate = sub.start_date ? new Date(sub.start_date) : 
                        sub.startDate ? new Date(sub.startDate) : new Date();
                        
