@@ -32,17 +32,14 @@ export default function Settings() {
 
     const loadProfile = async () => {
       try {
-        // First check if the profile exists - fix the query format
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name')
           .eq('id', user.id);
         
-        // Check if we got any results
         if (error || !data || data.length === 0) {
           console.error('Error or no profile found:', error);
           
-          // Try to create a profile
           try {
             const { error: insertError } = await supabase
               .from('profiles')
@@ -65,11 +62,9 @@ export default function Settings() {
             console.error('Exception creating profile:', insertErr);
           }
         } else if (data && data.length > 0) {
-          // We have profile data
           setFormData(prev => ({ ...prev, fullName: data[0].full_name }));
         }
 
-        // Continue with user metadata
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user) {
           setUserMetadata({

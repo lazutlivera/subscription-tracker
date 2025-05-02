@@ -35,23 +35,36 @@ export default function Analytics() {
             id: sub.id,
             name: sub.name,
             price: Number(sub.price),
-            startDate: new Date(sub.start_date),
-            nextPaymentDate: new Date(sub.next_payment_date),
-            canceledDate: sub.canceled_date ? new Date(sub.canceled_date) : null,
+            start_date: sub.start_date,
+            next_payment_date: sub.next_payment_date,
+            canceled_date: sub.canceled_date,
+            user_id: sub.user_id,
             category: sub.category,
-            logo: sub.logo
+            logo: sub.logo,
+            startDate: sub.start_date,
+            nextPaymentDate: sub.next_payment_date,
+            canceledDate: sub.canceled_date
           }));
           setSubscriptions(transformedData);
         }
       } else {
         const saved = localStorage.getItem('subscriptions');
         if (saved) {
-          const loadedSubscriptions = JSON.parse(saved, (key, value) => {
-            if (key === 'startDate' || key === 'canceledDate' || key === 'nextPaymentDate') {
-              return value ? new Date(value) : null;
-            }
-            return value;
-          });
+          const parsedData = JSON.parse(saved);
+          const loadedSubscriptions = parsedData.map((sub: any) => ({
+            id: sub.id,
+            name: sub.name,
+            price: Number(sub.price),
+            start_date: sub.start_date || sub.startDate,
+            next_payment_date: sub.next_payment_date || sub.nextPaymentDate,
+            canceled_date: sub.canceled_date || sub.canceledDate,
+            user_id: sub.user_id || '',
+            category: sub.category,
+            logo: sub.logo,
+            startDate: sub.start_date || sub.startDate,
+            nextPaymentDate: sub.next_payment_date || sub.nextPaymentDate,
+            canceledDate: sub.canceled_date || sub.canceledDate
+          }));
           setSubscriptions(loadedSubscriptions);
         }
       }
@@ -71,8 +84,8 @@ export default function Analytics() {
     }).reverse();
 
     subscriptions.forEach(sub => {
-      const startDate = new Date(sub.startDate);
-      const endDate = sub.canceledDate ? new Date(sub.canceledDate) : new Date();
+      const startDate = new Date(sub.start_date);
+      const endDate = sub.canceled_date ? new Date(sub.canceled_date) : new Date();
 
       last12Months.forEach(monthData => {
         if (monthData.date >= startDate && monthData.date <= endDate) {

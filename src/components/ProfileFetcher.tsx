@@ -14,14 +14,12 @@ export default function ProfileFetcher({ onProfileLoaded }: { onProfileLoaded: (
       setProfileFetchAttempted(true);
       setIsLoading(true);
       
-      // Use metadata name if available
       if (user.user_metadata?.full_name) {
         onProfileLoaded(user.user_metadata.full_name);
         setIsLoading(false);
         return;
       }
 
-      // Only fetch from profiles if no metadata name exists
       const getProfile = async () => {
         try {
           const { data, error } = await supabase

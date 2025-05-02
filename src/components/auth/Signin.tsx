@@ -39,7 +39,6 @@ export default function SignIn() {
 
       if (error) {
         if (error.message.includes('Email not confirmed')) {
-          // Handle unconfirmed email
           const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email: formData.email,

@@ -34,22 +34,17 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
   const [isMidScreen2, setIsMidScreen2] = useState(false);
   useEffect(() => {
     setIsMounted(true);
-    // Check if device is touch-enabled
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
     
-    // Function to check screen size
     const checkScreenSize = () => {
       setIsMidScreen(window.innerWidth <= 1163 && window.innerWidth >= 768);
       setIsMidScreen2(window.innerWidth <= 767 && window.innerWidth >= 481);
     };
     
-    // Initial check
     checkScreenSize();
     
-    // Add event listener for window resize
     window.addEventListener('resize', checkScreenSize);
     
-    // Add responsive styles for different screen sizes
     const style = document.createElement('style');
     style.innerHTML = `
       .recharts-sector {
@@ -113,17 +108,14 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     };
   }, []);
 
-  // Calculate total monthly cost
   const totalMonthly = subscriptions
     .filter(sub => !sub.canceled_date) // Only include active subscriptions
     .reduce((total, sub) => total + Number(sub.price), 0);
 
-  // Calculate total spent to date
   const totalSpent = subscriptions.reduce((total, sub) => {
     const startDate = new Date(sub.start_date);
     const today = new Date();
     
-    // Skip future subscriptions
     if (startDate > today) {
       return total;
     }
@@ -138,7 +130,6 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
     return total + (Number(sub.price) * Math.max(1, monthsDiff));
   }, 0);
 
-  // Format data for Recharts
   const chartData = subscriptions.map(sub => ({
     name: sub.name,
     value: sub.price,
@@ -154,11 +145,9 @@ export function SubscriptionChart({ subscriptions }: ChartProps) {
   };
 
   const handlePieClick = (data: any, index: number) => {
-    // Do nothing - disable click functionality
     return;
   };
 
-  // Empty tooltip to prevent default tooltip
   const EmptyTooltip = () => null;
 
   const showCenterText = subscriptions.length > 0;

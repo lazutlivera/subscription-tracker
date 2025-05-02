@@ -27,7 +27,6 @@ export default function NotificationBell() {
   const handleBellClick = async () => {
     setShowDropdown(!showDropdown);
     if (!showDropdown && user && notifications.length > 0) {
-      // Mark all as read when opening dropdown
       await Promise.all(
         notifications.map(n => NotificationService.markAsRead(n.id, user.id))
       );

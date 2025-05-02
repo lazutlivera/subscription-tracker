@@ -2,14 +2,12 @@ let failureCount = 0;
 const MAX_FAILURES = 3;
 let circuitOpen = false;
 let lastFailureTime = 0;
-const RESET_TIMEOUT = 60000; // 1 minute
+const RESET_TIMEOUT = 60000; 
 
 export function canMakeRequest(): boolean {
-  // If circuit is open, check if we can reset
   if (circuitOpen) {
     const now = Date.now();
     if (now - lastFailureTime > RESET_TIMEOUT) {
-      // Reset circuit after timeout
       circuitOpen = false;
       failureCount = 0;
       return true;
