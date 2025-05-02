@@ -97,3 +97,59 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Various bug fixes and performance improvements
 
 [See full changelog](CHANGELOG.md)
+
+## Testing
+
+### Unit Testing
+
+The subscription tracker includes a comprehensive suite of unit tests to ensure code quality and reliability. Tests are written using Jest and React Testing Library.
+
+#### Testing Structure
+
+- `__tests__/`: Contains all test files, mirroring the structure of the source code
+  - `components/`: Tests for React components
+  - `contexts/`: Tests for context providers
+  - `utils/`: Tests for utility functions
+
+#### Running Tests
+
+To run the tests:
+
+```bash
+npm test
+```
+
+To run tests with coverage:
+
+```bash
+npm test -- --coverage
+```
+
+To run a specific test file:
+
+```bash
+npm test -- path/to/test-file.test.tsx
+```
+
+#### Test Coverage
+
+The test suite covers:
+
+- **Utility Functions**: Request limiter, circuit breaker, validation, categories
+- **React Components**: Authentication forms, subscription management
+- **Context Providers**: Authentication context
+
+#### Mock Strategy
+
+The tests use a combination of:
+- Direct mocks for external dependencies like Supabase
+- Component mocks to isolate testing logic
+- Context mocks to provide test data
+
+#### Adding New Tests
+
+When adding new features, create corresponding test files in the `__tests__` directory. Follow the existing pattern of:
+1. Mocking dependencies
+2. Setting up test data
+3. Rendering components or executing functions
+4. Asserting expected behavior
