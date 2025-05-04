@@ -380,6 +380,7 @@ export default function Home() {
             </div>
             {user ? (
               <button 
+                id="signout-button"
                 className="hidden md:block text-sm md:text-base bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 md:px-4 md:py-2 transition-colors"
                 onClick={signOut}
               >
