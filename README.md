@@ -153,3 +153,57 @@ When adding new features, create corresponding test files in the `__tests__` dir
 2. Setting up test data
 3. Rendering components or executing functions
 4. Asserting expected behavior
+
+### End-to-End Testing
+
+The subscription tracker also includes a comprehensive E2E testing suite built with Playwright to verify critical user flows in a real browser environment.
+
+#### E2E Test Structure
+
+- `e2e/`: Contains all E2E test files and utilities
+  - `tests/`: Test specs organized by feature
+    - `auth/`: Authentication tests
+    - `subscriptions/`: Subscription management tests
+  - `page-objects/`: Page object models for different parts of the application
+  - `fixtures/`: Test fixtures and data
+  - `utils/`: Helper functions for E2E testing
+
+#### Running E2E Tests
+
+Run all E2E tests:
+
+```bash
+npm run e2e
+```
+
+Run with UI mode for debugging:
+
+```bash
+npm run e2e:ui
+```
+
+View detailed reports:
+
+```bash
+npm run e2e:report
+```
+
+#### E2E Test Coverage
+
+The E2E test suite covers critical user flows:
+
+1. **Authentication**
+   - Login and logout processes
+   - Session management
+
+2. **Subscription Management**
+   - Adding new subscriptions
+   - Canceling subscriptions
+   - Date calculations and refresh
+   - Persistence of changes after page refreshes
+
+3. **Issue-Specific Tests**
+   - Payment date refresh for overdue payments
+   - Cancel button persistence
+
+For more details, see the [E2E Testing README](e2e/README.md).

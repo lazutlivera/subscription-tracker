@@ -80,7 +80,7 @@ export default function SignIn() {
           </div>
         )}
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500 text-red-500 rounded-lg">
+          <div id="error-message" className="mb-4 p-3 bg-red-500/10 border border-red-500 text-red-500 rounded-lg">
             {error}
           </div>
         )}
@@ -91,6 +91,7 @@ export default function SignIn() {
               Email
             </label>
             <input
+              name="email"
               id="email"
               type="email"
               required
@@ -105,6 +106,7 @@ export default function SignIn() {
               Password
             </label>
             <input
+              name="password"
               id="password"
               type="password"
               required
