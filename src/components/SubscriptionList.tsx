@@ -213,6 +213,7 @@ export default function SubscriptionList({
                 </div>
                 {!subscription.canceledDate && !subscription.canceled_date && (
                   <button
+                    id={`cancel-subscription-${subscription.id}`}
                     onClick={() => onCancel(subscription)}
                     className="w-full mt-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg py-1.5 md:py-2 text-sm md:text-base transition-colors"
                   >

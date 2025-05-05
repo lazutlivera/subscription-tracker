@@ -81,7 +81,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
           canceledDate: canceledDate ? new Date(canceledDate).toISOString().split('T')[0] : '',
           billingCycle: 'monthly',
           logo: existingSubscription.logo || '',
-          category: existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other'
+          category: (existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other') as SubscriptionCategory
         });
       } catch (error) {
         console.error('Error setting form data:', error);
@@ -93,7 +93,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
           canceledDate: '',
           billingCycle: 'monthly',
           logo: existingSubscription.logo || '',
-          category: existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other'
+          category: (existingSubscription.category || defaultCategories[existingSubscription.name] || 'Other') as SubscriptionCategory
         });
       }
     }
@@ -173,11 +173,16 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
     const subscription: Omit<Subscription, "id"> = {
       name: formData.name,
       price: Number(price),
-      startDate: startDate,
+      start_date: startDate.toISOString(),
+      next_payment_date: nextPaymentDate.toISOString(),
+      canceled_date: formData.canceledDate ? new Date(formData.canceledDate).toISOString() : null,
       category: (formData.category || defaultCategories[formData.name] || 'Other') as SubscriptionCategory,
-      canceledDate: formData.canceledDate ? new Date(formData.canceledDate) : null,
-      nextPaymentDate: nextPaymentDate,
+      user_id: user?.id || '',
       logo: isCustom ? generateInitialsLogo(formData.name) : (formData.logo || ''),
+      // Add aliases for compatibility
+      startDate: startDate.toISOString(),
+      nextPaymentDate: nextPaymentDate.toISOString(),
+      canceledDate: formData.canceledDate ? new Date(formData.canceledDate).toISOString() : null,
     };
 
     onSubmit(subscription);
@@ -361,6 +366,7 @@ export default function SubscriptionForm({ onSubmit, existingSubscription, subsc
 
         <div className="flex gap-2 md:gap-4">
           <button
+            id="add-subscription-button"
             type="submit"
             className="flex-1 bg-[#6C5DD3] hover:bg-[#5B4EC2] text-white rounded-lg p-2 md:p-3 transition-colors text-sm md:text-base"
           >

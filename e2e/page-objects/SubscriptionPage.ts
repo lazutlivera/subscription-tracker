@@ -15,7 +15,7 @@ export class SubscriptionPage extends BasePage {
   readonly saveButton = 'button:has-text("Save")';
   readonly cancelButton = 'button:has-text("Cancel")';
   readonly deleteButton = 'button:has-text("Delete")';
-  readonly cancelSubscriptionButton = 'button:has-text("Cancel Subscription")';
+  readonly cancelSubscriptionButton = 'button:has-text("Cancel")';
   readonly nextPaymentDate = '[data-testid="next-payment-date"], .next-payment-date, .payment-date';
   
   constructor(page: Page) {
@@ -180,8 +180,8 @@ export class SubscriptionPage extends BasePage {
     try {
       await this.page.click(this.cancelSubscriptionButton);
     } catch (e) {
-      // If specific button not found, try any button with "cancel" in the text
-      await this.page.click('button:has-text("Cancel")');
+      // If specific button not found, try the subscription-specific cancel button
+      await this.page.click(this.getCancelButtonSelector(name));
     }
     
     // Confirm the modal if it appears
@@ -261,11 +261,18 @@ export class SubscriptionPage extends BasePage {
     } catch (e) {
       // Try alternative selectors for cancel button
       try {
-        const altCancelButton = this.page.locator('button:has-text("Cancel Subscription"), button:has-text("Cancel")');
+        const altCancelButton = this.page.locator(`button:has-text("Cancel")`);
         return await altCancelButton.isVisible({ timeout: 1000 });
       } catch (e) {
         return false;
       }
     }
+  }
+
+  /**
+   * Get cancel button selector for a specific subscription
+   */
+  getCancelButtonSelector(name: string): string {
+    return `button[id="cancel-subscription-${name}"]`;
   }
 } 
