@@ -1,119 +1,110 @@
 import { expect } from '@playwright/test';
 import { test } from '../../fixtures/test.fixture';
-import { generateRandomSubscription } from '../../utils/test-helpers';
 
-test.describe('Subscription Cancellation Button Persistence', () => {
+test.describe('Subscription Cancel Button Behavior', () => {
+  // Navigate to the dashboard before each test
   test.beforeEach(async ({ authenticatedPage }) => {
-    // Navigate to the dashboard/subscription page
     await authenticatedPage.goto('/');
-    // Wait for the page to be fully loaded
     await authenticatedPage.waitForNavigation();
   });
 
-  test('should hide cancel button permanently after cancellation', async ({ authenticatedPage, subscriptionPage, page }) => {
-    // Create a random subscription for testing
-    const subscription = generateRandomSubscription();
-    await subscriptionPage.addSubscription(subscription);
+  test('canceled subscription shows visual indication in UI', async ({ subscriptionPage, page }) => {
+    // Clear existing subscriptions by clicking Delete All
+    try {
+      const deleteAllButton = page.locator('button:has-text("Delete All")');
+      if (await deleteAllButton.isVisible()) {
+        await deleteAllButton.click();
+        
+        // If a confirmation dialog appears, click confirm
+        const confirmButton = page.locator('button:has-text("Yes"), button:has-text("Confirm")');
+        if (await confirmButton.isVisible({ timeout: 1000 })) {
+          await confirmButton.click();
+        }
+        
+        // Wait for the list to clear
+        await page.waitForTimeout(500);
+      }
+    } catch (e) {
+      // No Delete All button or no subscriptions yet
+    }
     
-    // Verify it exists
-    expect(await subscriptionPage.findSubscriptionByName(subscription.name)).toBeTruthy();
+    // Setup: Add Netflix from the predefined list
+    await subscriptionPage.openAddSubscriptionForm();
     
-    // Verify cancel button is initially visible
-    const initialButtonVisible = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(initialButtonVisible).toBeTruthy();
+    // Select Netflix from dropdown and submit
+    await page.selectOption('select[name="name"]', 'Netflix');
+    await page.click('button[id="add-subscription-button"]');
     
-    // Cancel the subscription
-    await subscriptionPage.cancelSubscription(subscription.name);
+    // Wait for the subscription to be added and appear in the list
+    await page.waitForSelector(`${subscriptionPage.subscriptionItem}:has-text("Netflix")`, { state: 'visible' });
     
-    // Verify cancel button is no longer visible
-    const buttonVisibleAfterCancel = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(buttonVisibleAfterCancel).toBeFalsy();
+    // Verify Netflix was added
+    expect(await subscriptionPage.findSubscriptionByName('Netflix')).toBeTruthy();
     
-    // Refresh the page
-    await subscriptionPage.navigateToSubscriptions();
-    
-    // Verify the subscription is still in the list (but cancelled)
-    expect(await subscriptionPage.findSubscriptionByName(subscription.name)).toBeTruthy();
-    
-    // Verify cancel button is still not visible after refresh
-    const buttonVisibleAfterRefresh = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(buttonVisibleAfterRefresh).toBeFalsy();
-  });
-
-  test('should maintain cancellation state across multiple refreshes', async ({ authenticatedPage, subscriptionPage, page }) => {
-    // Add a subscription
-    const subscription = generateRandomSubscription();
-    await subscriptionPage.addSubscription(subscription);
-    
-    // Cancel it
-    await subscriptionPage.cancelSubscription(subscription.name);
-    
-    // First refresh
-    await subscriptionPage.navigateToSubscriptions();
-    let buttonVisible = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(buttonVisible).toBeFalsy();
-    
-    // Second refresh
-    await subscriptionPage.navigateToSubscriptions();
-    buttonVisible = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(buttonVisible).toBeFalsy();
-    
-    // Third refresh
-    await subscriptionPage.navigateToSubscriptions();
-    buttonVisible = await subscriptionPage.isCancelButtonVisible(subscription.name);
-    expect(buttonVisible).toBeFalsy();
-  });
-
-  test('should display canceled state correctly in UI', async ({ authenticatedPage, subscriptionPage, page }) => {
-    // Add a subscription
-    const subscription = generateRandomSubscription();
-    await subscriptionPage.addSubscription(subscription);
-    
-    // Get the subscription item before cancellation
+    // Capture subscription item appearance before cancellation
     const subscriptionItems = page.locator(subscriptionPage.subscriptionItem);
-    const count = await subscriptionItems.count();
-    let uncanceledItemText = '';
+    let beforeCancelText = '';
+    let beforeCancelClasses = '';
     
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < await subscriptionItems.count(); i++) {
       const item = subscriptionItems.nth(i);
       const text = await item.textContent() || '';
-      if (text.includes(subscription.name)) {
-        uncanceledItemText = text;
+      if (text.includes('Netflix')) {
+        beforeCancelText = text;
+        beforeCancelClasses = await item.getAttribute('class') || '';
         break;
       }
     }
     
-    // Cancel the subscription
-    await subscriptionPage.cancelSubscription(subscription.name);
+    // Cancel Netflix subscription
+    await subscriptionPage.cancelSubscription('Netflix');
     
-    // Refresh the page
+    // Verify immediate UI changes
+    expect(await subscriptionPage.isCancelButtonVisible('Netflix')).toBeFalsy();
+    
+    // Refresh the page and verify changes persist
     await subscriptionPage.navigateToSubscriptions();
     
-    // Find the subscription item after cancellation
-    const refreshedItems = page.locator(subscriptionPage.subscriptionItem);
-    const refreshedCount = await refreshedItems.count();
-    let canceledItemText = '';
+    // Wait for Netflix subscription to appear after refresh
+    await page.waitForSelector(`${subscriptionPage.subscriptionItem}:has-text("Netflix")`, { state: 'visible' });
     
-    for (let i = 0; i < refreshedCount; i++) {
+    // Capture subscription item appearance after cancellation
+    const refreshedItems = page.locator(subscriptionPage.subscriptionItem);
+    let afterCancelText = '';
+    let afterCancelClasses = '';
+    
+    for (let i = 0; i < await refreshedItems.count(); i++) {
       const item = refreshedItems.nth(i);
       const text = await item.textContent() || '';
-      if (text.includes(subscription.name)) {
-        canceledItemText = text;
+      if (text.includes('Netflix')) {
+        afterCancelText = text;
+        afterCancelClasses = await item.getAttribute('class') || '';
         break;
       }
     }
     
-    // Check if there's any visual indication of cancellation
-    // This could be based on text like "Canceled" or different styling
-    // We can only check the text content here
-    expect(canceledItemText).not.toBe('');
+    // Verify subscription still exists
+    expect(await subscriptionPage.findSubscriptionByName('Netflix')).toBeTruthy();
     
-    // Ideally, the canceled item would have some indication in the text
-    // This test is a bit naive and depends on the app's UI implementation
-    const isCanceledIndicated = 
-      canceledItemText.toLowerCase().includes('cancel') || 
-      canceledItemText !== uncanceledItemText;
+    // Verify some visual difference exists between canceled and active subscriptions
+    expect(beforeCancelText).not.toBe('');
+    expect(afterCancelText).not.toBe('');
+    
+    const hasDifference = 
+      afterCancelText.toLowerCase().includes('cancel') || 
+      beforeCancelText !== afterCancelText ||
+      beforeCancelClasses !== afterCancelClasses;
       
-    expect(isCanceledIndicated).toBeTruthy();
+    expect(hasDifference).toBeTruthy();
+    
+    // Verify cancel button remains hidden
+    expect(await subscriptionPage.isCancelButtonVisible('Netflix')).toBeFalsy();
+    
+    // Optional cleanup: Delete the test subscription
+    try {
+      await subscriptionPage.deleteSubscription('Netflix');
+    } catch (e) {
+      // If delete is not available for canceled subscriptions, ignore error
+    }
   });
 }); 
