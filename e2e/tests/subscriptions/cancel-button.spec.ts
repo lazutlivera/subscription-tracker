@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { test } from '../../fixtures/test.fixture';
+import { formatDateForInput } from '../../utils/test-helpers';
 
 test.describe('Subscription Cancel Button Behavior', () => {
   // Navigate to the dashboard before each test
@@ -31,8 +32,16 @@ test.describe('Subscription Cancel Button Behavior', () => {
     // Setup: Add Netflix from the predefined list
     await subscriptionPage.openAddSubscriptionForm();
     
-    // Select Netflix from dropdown and submit
+    // Select Netflix from dropdown
     await page.selectOption('select[name="name"]', 'Netflix');
+    
+    // Set start date to 1 month - 2 days ago
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 1);
+    startDate.setDate(startDate.getDate() - 2);
+    await page.fill('input[name="startDate"]', formatDateForInput(startDate));
+    
+    // Click add subscription button
     await page.click('button[id="add-subscription-button"]');
     
     // Wait for the subscription to be added and appear in the list
@@ -59,7 +68,10 @@ test.describe('Subscription Cancel Button Behavior', () => {
     // Cancel Netflix subscription
     await subscriptionPage.cancelSubscription('Netflix');
     
-    // Verify immediate UI changes
+    // Wait for the UI to update after cancellation
+    await page.waitForTimeout(500);
+    
+    // Verify immediate UI changes - cancel button should no longer be visible
     expect(await subscriptionPage.isCancelButtonVisible('Netflix')).toBeFalsy();
     
     // Refresh the page and verify changes persist
@@ -99,12 +111,5 @@ test.describe('Subscription Cancel Button Behavior', () => {
     
     // Verify cancel button remains hidden
     expect(await subscriptionPage.isCancelButtonVisible('Netflix')).toBeFalsy();
-    
-    // Optional cleanup: Delete the test subscription
-    try {
-      await subscriptionPage.deleteSubscription('Netflix');
-    } catch (e) {
-      // If delete is not available for canceled subscriptions, ignore error
-    }
   });
 }); 

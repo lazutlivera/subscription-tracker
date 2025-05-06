@@ -33,6 +33,15 @@ export function getDateMonthsFromNow(months: number): Date {
 }
 
 /**
+ * Get a date that's N months ago
+ */
+export function getDateMonthsAgo(months: number): Date {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date;
+}
+
+/**
  * Clear browser storage (localStorage, sessionStorage, cookies)
  */
 export async function clearBrowserStorage(page: Page): Promise<void> {

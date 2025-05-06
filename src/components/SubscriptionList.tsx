@@ -207,8 +207,8 @@ export default function SubscriptionList({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 text-xs md:text-sm">Next Payment</span>
-                  <span className="text-white text-sm md:text-base">
-                    {formatDate(subscription.next_payment_date || subscription.nextPaymentDate)}
+                  <span id="next-payment-date" className="text-white text-sm md:text-base">
+                    {subscription.canceledDate || subscription.canceled_date ? 'Cancelled' : formatDate(subscription.next_payment_date || subscription.nextPaymentDate)}
                   </span>
                 </div>
                 {!subscription.canceledDate && !subscription.canceled_date && (
