@@ -16,7 +16,7 @@ export class SubscriptionPage extends BasePage {
   readonly cancelButton = 'button:has-text("Cancel")';
   readonly deleteButton = 'button:has-text("Delete")';
   readonly cancelSubscriptionButton = 'button:has-text("Cancel")';
-  readonly nextPaymentDate = '[data-testid="next-payment-date"], .next-payment-date, .payment-date';
+  readonly nextPaymentDate = 'span[id="next-payment-date"]';
   
   constructor(page: Page) {
     super(page);
